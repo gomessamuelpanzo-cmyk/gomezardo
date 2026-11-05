@@ -89,7 +89,15 @@ label{display:block;font-weight:600;margin:12px 0 6px}
   </section>
 
   <section id="p-s" hidden>
-    <div class="card stack">
+    <div class="card stack" id="lk" hidden>
+      <label id="lkt" for="pw" style="margin-top:0"></label>
+      <input id="pw" type="password" autocomplete="off" placeholder="Senha">
+      <input id="pw2" type="password" autocomplete="off" placeholder="Repita a senha" hidden>
+      <button class="act p" id="lkb" type="button"></button>
+      <p class="muted" id="lkm" role="alert"></p>
+      <button class="act" id="rst" type="button" hidden>Esqueci a senha (apagar tudo)</button>
+    </div>
+    <div class="card stack" id="sc" hidden>
       <label for="prov" style="margin-top:0">Serviço de IA</label>
       <select id="prov" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="gemini">Google Gemini (gratuito)</option><option value="claude">Anthropic Claude</option></select>
       <label for="key">Chave da API</label>
@@ -100,6 +108,7 @@ label{display:block;font-weight:600;margin:12px 0 6px}
       <button class="act p" id="sv" type="button" style="margin-top:12px">Guardar definições</button>
       <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados ao serviço de IA escolhido para serem interpretados.</p>
       <button class="act" id="inst" type="button" hidden>Instalar a app</button>
+      <button class="act" id="lockbtn" type="button">Bloquear definições</button>
       <p class="muted" id="ios" hidden>No iPhone: toque em Partilhar e depois em «Adicionar ao ecrã principal».</p>
     </div>
   </section>
@@ -115,6 +124,7 @@ var timers=[],pending=null,on=false,rec=null,hist=[],log=$('log'),st=$('state');
 
 if(!cfg.prov)cfg.prov='claude';
 var DEF={gemini:'gemini-flash-latest',claude:'claude-haiku-5-5'};
+var unlocked=false,fails=0,until=0,PW=store('av3_pw',null);
 /* ---------- utilitários ---------- */
 function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
 function digits(p){return p.replace(/[^\d+]/g,'')}
@@ -194,7 +204,7 @@ async function gem(sys){
 }
 /* ---------- execução ---------- */
 function doContact(a,c,body){var n=digits(c.phone);
- if(a==='ligar')return ask('Ligar para '+c.name+'?','tel:'+n,'Ligar agora');
+ if(a==='ligar'){say('A ligar para '+c.name+'.',[{label:'Ligar agora',href:'tel:'+n,p:true}]);launch('tel:'+n);return}
  if(a==='sms')return ask('Mensagem para '+c.name+(body?': «'+body+'»':'')+'?','sms:'+n+(body?'?body='+encodeURIComponent(body):''),'Abrir SMS');
  return ask('Abrir o WhatsApp com '+c.name+'?','https://wa.me/'+n.replace('+',''),'Abrir WhatsApp');
 }
@@ -244,8 +254,8 @@ else{rec=new SR();rec.lang='pt-PT';rec.interimResults=true;rec.maxAlternatives=5
  mic.onclick=function(){if(on){rec.stop();return}try{speechSynthesis.cancel()}catch(x){}listenNow()}}
 
 /* ---------- separadores, listas, definições ---------- */
-function tab(p){['a','c','n','s'].forEach(function(k){$('p-'+k).hidden=k!==p});
- document.querySelectorAll('.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.p===p)})}
+function tab(p){if(p!=='s')unlocked=false;['a','c','n','s'].forEach(function(k){$('p-'+k).hidden=k!==p});
+ document.querySelectorAll('.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.p===p)});if(p==='s')guard()}
 document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tab(b.dataset.p)}});
 function row(main,sub,del){var d=document.createElement('div');d.className='it';
  var l=document.createElement('div');l.textContent=main;var s=document.createElement('small');s.textContent=sub;l.appendChild(s);
@@ -262,6 +272,39 @@ $('prov').value=cfg.prov;$('key').value=cfg.key;$('mod').value=cfg.model;$('sp')
 $('prov').onchange=function(){var m=$('mod').value.trim();if(!m||m===DEF.gemini||m===DEF.claude)$('mod').value=DEF[$('prov').value]};
 $('sv').onclick=function(){cfg.prov=$('prov').value;cfg.key=$('key').value.trim();cfg.model=$('mod').value.trim()||DEF[cfg.prov];cfg.speak=$('sp').checked;put('av3_cfg',cfg);
  if(!cfg.speak)try{speechSynthesis.cancel()}catch(e){}tab('a');say('Definições guardadas.')};
+
+/* ---------- senha das definições ---------- */
+function guard(){
+ var lk=$('lk'),sc=$('sc');
+ if(unlocked){lk.hidden=true;sc.hidden=false;return}
+ sc.hidden=true;lk.hidden=false;
+ $('lkt').textContent=PW?'Senha das definições':'Crie uma senha para proteger as definições';
+ $('pw2').hidden=!!PW;$('lkb').textContent=PW?'Entrar':'Criar senha';$('rst').hidden=!PW;
+ $('lkm').textContent='';$('pw').value='';$('pw2').value='';
+}
+function b64(b){return btoa(String.fromCharCode.apply(null,new Uint8Array(b)))}
+function unb64(x){return Uint8Array.from(atob(x),function(c){return c.charCodeAt(0)})}
+async function hashPw(pw,salt){
+ var k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+ return b64(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:salt,iterations:150000},k,256));
+}
+$('lkb').onclick=async function(){
+ var pw=$('pw').value,m=$('lkm');
+ if(!pw){m.textContent='Escreva a senha.';return}
+ if(!window.crypto||!crypto.subtle){m.textContent='Este navegador não suporta a proteção por senha.';return}
+ if(!PW){
+  if(pw.length<4){m.textContent='Use pelo menos 4 caracteres.';return}
+  if(pw!==$('pw2').value){m.textContent='As senhas não coincidem.';return}
+  var salt=crypto.getRandomValues(new Uint8Array(16));
+  PW={s:b64(salt),h:await hashPw(pw,salt)};put('av3_pw',PW);unlocked=true;guard();return}
+ if(Date.now()<until){m.textContent='Muitas tentativas. Espere '+Math.ceil((until-Date.now())/1000)+' s.';return}
+ var h=await hashPw(pw,unb64(PW.s));
+ if(h===PW.h){fails=0;unlocked=true;guard()}
+ else{fails++;if(fails>=5){until=Date.now()+30000;fails=0}m.textContent='Senha errada.';$('pw').value=''}
+};
+['pw','pw2'].forEach(function(i){$(i).addEventListener('keydown',function(e){if(e.key==='Enter')$('lkb').click()})});
+$('rst').onclick=function(){if(confirm('Isto apaga a senha, a chave, os contactos e as notas deste dispositivo. Continuar?')){try{localStorage.clear()}catch(e){}location.reload()}};
+$('lockbtn').onclick=function(){tab('a')};
 
 /* ---------- app instalável ---------- */
 var dp=null;
