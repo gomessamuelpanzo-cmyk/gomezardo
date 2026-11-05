@@ -1,4 +1,4 @@
-var C = 'assistente-v3';
+var C = 'gomezardo-v2';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', function (e) {

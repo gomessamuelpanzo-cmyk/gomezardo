@@ -90,13 +90,15 @@ label{display:block;font-weight:600;margin:12px 0 6px}
 
   <section id="p-s" hidden>
     <div class="card stack">
-      <label for="key" style="margin-top:0">Chave da API Anthropic</label>
-      <input id="key" type="password" autocomplete="off" placeholder="sk-ant-…">
+      <label for="prov" style="margin-top:0">Serviço de IA</label>
+      <select id="prov" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="gemini">Google Gemini (gratuito)</option><option value="claude">Anthropic Claude</option></select>
+      <label for="key">Chave da API</label>
+      <input id="key" type="password" autocomplete="off" placeholder="Cole a chave aqui">
       <label for="mod">Modelo</label>
       <input id="mod" type="text">
       <label class="dock" style="font-weight:400;margin:12px 0 0"><input type="checkbox" id="sp" style="flex:none"> Responder em voz</label>
       <button class="act p" id="sv" type="button" style="margin-top:12px">Guardar definições</button>
-      <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados à API da Anthropic para serem interpretados.</p>
+      <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados ao serviço de IA escolhido para serem interpretados.</p>
       <button class="act" id="inst" type="button" hidden>Instalar a app</button>
       <p class="muted" id="ios" hidden>No iPhone: toque em Partilhar e depois em «Adicionar ao ecrã principal».</p>
     </div>
@@ -108,9 +110,11 @@ label{display:block;font-weight:600;margin:12px 0 6px}
 var $=function(i){return document.getElementById(i)};
 function store(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function put(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-var cfg=store('av3_cfg',{key:'',model:'claude-haiku-5-5',speak:true}),contacts=store('av3_c',[]),notes=store('av3_n',[]);
+var cfg=store('av3_cfg',{prov:'gemini',key:'',model:'gemini-flash-latest',speak:true}),contacts=store('av3_c',[]),notes=store('av3_n',[]);
 var timers=[],pending=null,on=false,rec=null,hist=[],log=$('log'),st=$('state');
 
+if(!cfg.prov)cfg.prov='claude';
+var DEF={gemini:'gemini-flash-latest',claude:'claude-haiku-5-5'};
 /* ---------- utilitários ---------- */
 function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
 function digits(p){return p.replace(/[^\d+]/g,'')}
@@ -167,6 +171,7 @@ function addTimer(ms,label){var t={end:Date.now()+ms,label:label};
 async function ai(text){
  var sys='O teu nome é Gomezardo. És um assistente pessoal por voz, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, com os campos: "acao" (ligar, sms, whatsapp, pesquisar, musica, rota, abrir, temporizador, nota ou conversa), "contacto" (nome tal como está na lista, ou vazio), "texto" (mensagem, pesquisa, destino, site, nota ou etiqueta; vazio se não se aplicar), "segundos" (número, só para temporizador) e "resposta" (frase curta e natural para dizer em voz ao utilizador). Para perguntas e conversa usa a acao "conversa" e responde de forma breve em "resposta". Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
  hist.push({role:'user',content:text});hist=hist.slice(-10);
+ if(cfg.prov==='gemini')return gem(sys);
  var r;
  try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':cfg.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
   body:JSON.stringify({model:cfg.model,max_tokens:500,system:sys,messages:hist})})}
@@ -177,6 +182,16 @@ async function ai(text){
  hist.push({role:'assistant',content:t});return j;
 }
 
+async function gem(sys){
+ var r;
+ try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(cfg.model)+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':cfg.key},
+  body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:hist.map(function(h){return{role:h.role==='assistant'?'model':'user',parts:[{text:h.content}]}}),generationConfig:{responseMimeType:'application/json',maxOutputTokens:600}})})}
+ catch(e){hist.pop();throw new Error('Sem ligação à internet.')}
+ if(!r.ok){hist.pop();throw new Error(r.status===400||r.status===401||r.status===403?'Chave da Gemini inválida ou sem permissão. Verifique-a nas Definições.':r.status===404?'Modelo não encontrado. Verifique o nome nas Definições.':r.status===429?'Limite gratuito atingido. Tente daqui a pouco.':'Erro da Gemini ('+r.status+').')}
+ var d=await r.json(),t=((d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts)||[]).map(function(x){return x.text||''}).join('');
+ var j=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1));
+ hist.push({role:'assistant',content:t});return j;
+}
 /* ---------- execução ---------- */
 function doContact(a,c,body){var n=digits(c.phone);
  if(a==='ligar')return ask('Ligar para '+c.name+'?','tel:'+n,'Ligar agora');
@@ -243,8 +258,9 @@ $('cf').onsubmit=function(e){e.preventDefault();contacts.push({name:$('cn').valu
  contacts.sort(function(a,b){return a.name.localeCompare(b.name,'pt')});put('av3_c',contacts);renderContacts();$('cn').value='';$('cp').value=''};
 $('nf').onsubmit=function(e){e.preventDefault();notes.unshift({t:$('nt').value.trim(),d:new Date().toLocaleString('pt-PT')});put('av3_n',notes);renderNotes();$('nt').value=''};
 $('f').onsubmit=function(e){e.preventDefault();var v=$('txt').value;$('txt').value='';run(v)};
-$('key').value=cfg.key;$('mod').value=cfg.model;$('sp').checked=cfg.speak;
-$('sv').onclick=function(){cfg.key=$('key').value.trim();cfg.model=$('mod').value.trim()||'claude-haiku-5-5';cfg.speak=$('sp').checked;put('av3_cfg',cfg);
+$('prov').value=cfg.prov;$('key').value=cfg.key;$('mod').value=cfg.model;$('sp').checked=cfg.speak;
+$('prov').onchange=function(){var m=$('mod').value.trim();if(!m||m===DEF.gemini||m===DEF.claude)$('mod').value=DEF[$('prov').value]};
+$('sv').onclick=function(){cfg.prov=$('prov').value;cfg.key=$('key').value.trim();cfg.model=$('mod').value.trim()||DEF[cfg.prov];cfg.speak=$('sp').checked;put('av3_cfg',cfg);
  if(!cfg.speak)try{speechSynthesis.cancel()}catch(e){}tab('a');say('Definições guardadas.')};
 
 /* ---------- app instalável ---------- */
