@@ -1,4 +1,4 @@
-var C = 'gomezardo-v3';
+var C = 'gomezardo-v4';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', function (e) {
