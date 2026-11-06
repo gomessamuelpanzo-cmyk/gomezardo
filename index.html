@@ -219,21 +219,36 @@ function herr(p,s){
  var e=new Error(s===400||s===401||s===403?'Chave '+PNAME[p]+' inválida ou sem permissão.':s===404?'Modelo '+PNAME[p]+' não encontrado.':s===429?'Limite gratuito '+PNAME[p]+' atingido.':'Erro '+PNAME[p]+' ('+s+').');
  e.retry=(s===500||s===502||s===503);e.http=s;return e;
 }
+var T_CONN=10000,T_IDLE=12000;
+function withTimeout(pr,ms,msg){
+ return new Promise(function(res,rej){
+  var t=setTimeout(function(){var e=new Error(msg||'Tempo esgotado.');e.retry=true;rej(e)},ms);
+  pr.then(function(v){clearTimeout(t);res(v)},function(e){clearTimeout(t);rej(e)});
+ });
+}
 async function post(p,url,headers,body){
- var r;
- try{r=await fetch(url,{method:'POST',headers:Object.assign({'content-type':'application/json'},headers),body:JSON.stringify(body)})}
- catch(e){throw new Error('Sem ligação à internet.')}
+ var r,ac=new AbortController(),tm=setTimeout(function(){ac.abort()},T_CONN);
+ try{r=await fetch(url,{method:'POST',headers:Object.assign({'content-type':'application/json'},headers),body:JSON.stringify(body),signal:ac.signal})}
+ catch(e){
+  clearTimeout(tm);
+  var te=new Error(ac.signal.aborted?'o serviço '+PNAME[p]+' demorou demasiado':'Sem ligação à internet.');
+  te.retry=ac.signal.aborted;throw te;
+ }
+ clearTimeout(tm);
  if(!r.ok)throw herr(p,r.status);
  return r;
 }
 async function sse(resp,onData){
  var rd=resp.body.getReader(),dec=new TextDecoder(),buf='';
- for(;;){
-  var x=await rd.read();if(x.done)break;
-  buf+=dec.decode(x.value,{stream:true});
-  var ls=buf.split('\n');buf=ls.pop();
-  ls.forEach(function(l){if(l.indexOf('data:')!==0)return;var js=l.slice(5).trim();if(!js||js==='[DONE]')return;try{onData(JSON.parse(js))}catch(z){}});
- }
+ try{
+  for(;;){
+   var x=await withTimeout(rd.read(),T_IDLE,'a resposta parou a meio');
+   if(x.done)break;
+   buf+=dec.decode(x.value,{stream:true});
+   var ls=buf.split('\n');buf=ls.pop();
+   ls.forEach(function(l){if(l.indexOf('data:')!==0)return;var js=l.slice(5).trim();if(!js||js==='[DONE]')return;try{onData(JSON.parse(js))}catch(z){}});
+  }
+ }finally{try{rd.cancel()}catch(z){}}
 }
 async function oai(p,url,sys,msgs,o){
  var body={model:M(p),stream:true,max_tokens:1200,messages:[{role:'system',content:sys}].concat(msgs)};
@@ -249,7 +264,7 @@ var CALL={
   if(o.search)body.tools=[{google_search:{}}];
   var models=[M('gemini')];if(models[0]!=='gemini-flash-lite-latest')models.push('gemini-flash-lite-latest');
   var err=null;
-  for(var i=0;i<models.length;i++){for(var k=0;k<2;k++){
+  for(var i=0;i<models.length;i++){for(var k=0;k<1;k++){
    try{
     var r=await post('gemini','https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(models[i])+':streamGenerateContent?alt=sse',{'x-goog-api-key':K('gemini')},body);
     var full='',meta=null;
@@ -373,10 +388,13 @@ async function plan(q){
  }catch(e){return{}}
 }
 async function live(q,local){
- var S=mkStream();
+ var S=null;
+ function str(){return S||(S=mkStream())}
  try{
   st.textContent='A consultar fontes…';
-  var pl=await Promise.race([plan(q),new Promise(function(r){setTimeout(function(){r({})},3500)})]);
+  var pl={};
+  if(/\b(presidente|presidentes|primeiro ministro|ministro|ministra|rei|rainha|governador|papa|ceo|diretor|treinador)\b/.test(norm(q)))
+   pl=await Promise.race([plan(q),new Promise(function(r){setTimeout(function(){r({})},3500)})]);
   var src=[];
   try{src=await Promise.race([gather(pl.pesquisa||q,local||pl.local||'',pl.cargo||''),new Promise(function(r){setTimeout(function(){r([])},4500)})])}catch(z){src=[]}
   src.sort(function(a,b){return (a.name.indexOf('Wikidata')===0?0:1)-(b.name.indexOf('Wikidata')===0?0:1)});
@@ -384,9 +402,11 @@ async function live(q,local){
   var sys='És o Gomezardo, assistente de IA por voz e chat, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Responde diretamente à pergunta, em no máximo 5 frases curtas, naturais para serem ditas em voz alta. O teu conhecimento de treino pode estar desatualizado: se as fontes abaixo indicarem algo diferente do que sabes, confia nas fontes, porque são mais recentes. Dá prioridade ao Wikidata (base de dados oficial de cargos) e a notícias com data recente, e ignora páginas sem data ou desatualizadas. Diz de onde vêm os dados (por exemplo: segundo o Wikidata). Se as fontes não chegarem, responde com o que sabes e diz que não confirmaste em tempo real. Nunca mandes o utilizador pesquisar noutro lado e nunca inventes números. Códigos do tempo WMO: 0 limpo, 1 a 3 pouco a muito nublado, 45 e 48 nevoeiro, 51 a 67 chuvisco ou chuva, 71 a 77 neve, 80 a 82 aguaceiros, 95 a 99 trovoada.\n\nFONTES:\n'+ctx;
   st.textContent='A pensar…';
   var msgs=[{role:'user',content:q}],out;
-  try{out=await llm(sys,msgs,{search:true,onText:function(f){S.update(f)}})}
-  catch(e1){out=await llm(sys,msgs,{search:false,onText:function(f){S.update(f)}})}
-  S.finish(out.text);
+  var onT=function(f){str().update(f)};
+  var useSearch=src.length===0;
+  try{out=await llm(sys,msgs,{search:useSearch,onText:onT})}
+  catch(e1){out=await llm(sys,msgs,{search:false,onText:onT})}
+  str().finish(out.text);
   keep(out.text);
   var links=[];
   src.forEach(function(s){(s.links||[]).forEach(function(l){links.push(l)})});
@@ -395,7 +415,7 @@ async function live(q,local){
   links=links.slice(0,4).map(function(l){return{label:String(l.label).slice(0,26),href:l.href}});
   if(links.length)S.acts(links);
  }catch(e){
-  if(S.empty())S.el.remove();
+  if(S&&S.empty())S.el.remove();
   say('Não consegui responder agora ('+(e&&e.message?e.message:'erro desconhecido')+').',[{label:'Tentar de novo',fn:function(){run(q)},p:true}]);
  }
  st.textContent='';
@@ -439,7 +459,8 @@ async function run(alts){
  busy=true;st.textContent='A pensar…';
  if(needsLive(first)&&!CMD.test(clean(first))){
   hist.push({role:'user',content:first},{role:'assistant',content:'{}'});hist=hist.slice(-20);
-  await live(first,null);
+  try{await withTimeout(live(first,null),45000,'demorou demasiado')}
+  catch(e){say('Não consegui responder a tempo ('+e.message+').',[{label:'Tentar de novo',fn:function(){run(first)},p:true}])}
   busy=false;st.textContent='';
   if(!speaking())idle();
   return;
