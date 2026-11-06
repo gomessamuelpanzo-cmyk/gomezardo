@@ -1,8 +1,8 @@
-var C = 'gomezardo-v5';
-var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
+var C = 'gomezardo-v7';
+var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(C).then(function (c) { return c.addAll(SHELL); }));
+  e.waitUntil(caches.open(C).then(function (c) { return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); })); }));
   self.skipWaiting();
 });
 

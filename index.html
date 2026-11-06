@@ -3,16 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f8b8d">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Gomezardo</title>
 <style>
 :root{--bg:#eaf1ef;--card:#fff;--ink:#0d1b2a;--mute:#5c6f6e;--line:#d3e0dd;--acc:#0f8b8d;--sig:#ff6b4a;--soft:#dcebe9;--onacc:#fff}
 @media(prefers-color-scheme:dark){:root{--bg:#0b1a1f;--card:#12292f;--ink:#e8f3f1;--mute:#8eaaa8;--line:#1f3d44;--acc:#3fd0c9;--sig:#ff8366;--soft:#183840;--onacc:#06242a}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.hd{display:flex;align-items:center;gap:12px}
+.hd img{border-radius:14px;flex:none;border:1px solid var(--line)}
+.tag{margin:2px 0 0;color:var(--mute);font-size:.78rem}
 #cv{align-self:center;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:8px 16px;font:inherit;font-size:.9rem;cursor:pointer}
 #cv[aria-pressed=true]{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
 html,body{margin:0;height:100%}
@@ -54,7 +57,7 @@ label{display:block;font-weight:600;margin:12px 0 6px}
 </head>
 <body>
 <main>
-  <h1>Gomezardo</h1>
+  <header class="hd"><img src="logo.png" alt="Logótipo do Gomezardo" width="52" height="52"><div><h1>Gomezardo</h1><p class="tag">Assistant · criado por Gomes Samuel Panzo</p></div></header>
   <nav class="tabs" role="tablist">
     <button role="tab" data-p="a" aria-selected="true">Assistente</button>
     <button role="tab" data-p="c" aria-selected="false">Contactos</button>
@@ -102,15 +105,13 @@ label{display:block;font-weight:600;margin:12px 0 6px}
       <button class="act" id="rst" type="button" hidden>Esqueci a senha (apagar tudo)</button>
     </div>
     <div class="card stack" id="sc" hidden>
-      <label for="prov" style="margin-top:0">Serviço de IA</label>
-      <select id="prov" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="gemini">Google Gemini (gratuito)</option><option value="claude">Anthropic Claude</option></select>
-      <label for="key">Chave da API</label>
-      <input id="key" type="password" autocomplete="off" placeholder="Cole a chave aqui">
-      <label for="mod">Modelo</label>
-      <input id="mod" type="text">
+      <label for="prov" style="margin-top:0">Serviço principal de IA</label>
+      <select id="prov" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"></select>
+      <div id="prv" class="stack"></div>
+      <p class="muted">Chaves gratuitas: aistudio.google.com/apikey (Gemini), console.groq.com/keys (Groq), openrouter.ai/keys (OpenRouter), tavily.com (pesquisa web). Se um serviço falhar ou atingir o limite, o Gomezardo passa sozinho ao seguinte que tiver chave.</p>
       <label class="dock" style="font-weight:400;margin:12px 0 0"><input type="checkbox" id="sp" style="flex:none"> Responder em voz</label>
       <button class="act p" id="sv" type="button" style="margin-top:12px">Guardar definições</button>
-      <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados ao serviço de IA escolhido para serem interpretados.</p>
+      <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados aos serviços de IA configurados. As perguntas sobre atualidade também vão a fontes públicas (Wikipédia, notícias GDELT, Open-Meteo, câmbios e, se tiver chave, pesquisa web).</p>
       <button class="act" id="inst" type="button" hidden>Instalar a app</button>
       <button class="act" id="lockbtn" type="button">Bloquear definições</button>
       <p class="muted" id="ios" hidden>No iPhone: toque em Partilhar e depois em «Adicionar ao ecrã principal».</p>
@@ -127,7 +128,8 @@ var cfg=store('av3_cfg',{prov:'gemini',key:'',model:'gemini-flash-latest',speak:
 var timers=[],pending=null,on=false,rec=null,hist=[],log=$('log'),st=$('state'),busy=false,convo=false,sq=[],sp=false,gen=0,wantListen=false;
 
 if(!cfg.prov)cfg.prov='claude';
-var DEF={gemini:'gemini-flash-latest',claude:'claude-haiku-5-5'};
+var DEFM={gemini:'gemini-flash-latest',groq:'llama-3.3-70b-versatile',openrouter:'meta-llama/llama-3.3-70b-instruct:free',claude:'claude-haiku-5-5'};
+if(!cfg.keys){cfg.keys={};cfg.models={};if(cfg.key)cfg.keys[cfg.prov]=cfg.key;if(cfg.model)cfg.models[cfg.prov]=cfg.model}
 var unlocked=false,fails=0,until=0,PW=store('av3_pw',null);
 function nat(){return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.DirectCall||null}
 /* ---------- utilitários ---------- */
@@ -209,76 +211,163 @@ function addTimer(ms,label){var t={end:Date.now()+ms,label:label};
  timers.push(t);renderTimers()}
 
 /* ---------- API do Claude ---------- */
-async function ai(text,ui){
- var sys='O teu nome é Gomezardo. És um assistente pessoal por voz, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, pesquisar, musica, rota, abrir, temporizador, nota, atual ou conversa. Usa "atual" quando o pedido precisa de informação em tempo real ou muito recente (notícias, tempo, resultados desportivos, preços, cotações, eventos de hoje) e escreve em "texto" a pergunta completa para pesquisar; nesse caso "resposta" fica vazia. Para perguntas e conversa usa "conversa" e responde em "resposta" com no máximo 3 frases curtas, naturais para serem ditas em voz alta. "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, pesquisa, destino, site, nota ou etiqueta (vazio se não se aplicar). "segundos" é um número, só para temporizador. "resposta" é uma frase curta e natural para dizer ao utilizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
- hist.push({role:'user',content:text});hist=hist.slice(-10);
- if(cfg.prov==='gemini')return gem(sys,ui);
- var r;
- try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':cfg.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-  body:JSON.stringify({model:cfg.model,max_tokens:500,system:sys,messages:hist})})}
- catch(e){hist.pop();throw new Error('Sem ligação à internet.')}
- if(!r.ok){hist.pop();throw new Error(r.status===401?'Chave da API inválida. Verifique-a nas Definições.':r.status===404?'Modelo não encontrado. Verifique o nome nas Definições.':r.status===429?'Limite de pedidos atingido. Tente daqui a pouco.':'Erro da API ('+r.status+').')}
- var d=await r.json(),t=d.content.map(function(b){return b.text||''}).join('');
- var j=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1));
- hist.push({role:'assistant',content:t});return j;
+var PNAME={gemini:'Gemini',groq:'Groq',openrouter:'OpenRouter',claude:'Claude'};
+function K(p){return(cfg.keys&&cfg.keys[p])||''}
+function M(p){return(cfg.models&&cfg.models[p])||DEFM[p]}
+function chain(){var o=[cfg.prov,'gemini','groq','openrouter','claude'],r=[];o.forEach(function(p){if(K(p)&&r.indexOf(p)<0)r.push(p)});return r}
+function herr(p,s){
+ var e=new Error(s===400||s===401||s===403?'Chave '+PNAME[p]+' inválida ou sem permissão.':s===404?'Modelo '+PNAME[p]+' não encontrado.':s===429?'Limite gratuito '+PNAME[p]+' atingido.':'Erro '+PNAME[p]+' ('+s+').');
+ e.retry=(s===500||s===502||s===503);e.http=s;return e;
 }
-
-function gerr(s){
- var e=new Error(s===400||s===401||s===403?'Chave da Gemini inválida ou sem permissão. Verifique-a nas Definições.':s===404?'Modelo não encontrado. Verifique o nome nas Definições.':s===429?'Limite gratuito atingido. Tente daqui a pouco.':(s===503||s===500)?'O serviço da Gemini está ocupado. Tente outra vez.':'Erro da Gemini ('+s+').');
- e.retry=(s===503||s===500);return e;
-}
-async function gstream(model,body,onText){
+async function post(p,url,headers,body){
  var r;
- try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':streamGenerateContent?alt=sse',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':cfg.key},body:JSON.stringify(body)})}
+ try{r=await fetch(url,{method:'POST',headers:Object.assign({'content-type':'application/json'},headers),body:JSON.stringify(body)})}
  catch(e){throw new Error('Sem ligação à internet.')}
- if(!r.ok)throw gerr(r.status);
- var rd=r.body.getReader(),dec=new TextDecoder(),buf='',full='',meta=null;
+ if(!r.ok)throw herr(p,r.status);
+ return r;
+}
+async function sse(resp,onData){
+ var rd=resp.body.getReader(),dec=new TextDecoder(),buf='';
  for(;;){
   var x=await rd.read();if(x.done)break;
   buf+=dec.decode(x.value,{stream:true});
-  var lines=buf.split('\n');buf=lines.pop();
-  lines.forEach(function(l){
-   if(l.indexOf('data:')!==0)return;
-   var js=l.slice(5).trim();if(!js)return;
-   try{var d=JSON.parse(js),c=d.candidates&&d.candidates[0];
-    if(c){((c.content&&c.content.parts)||[]).forEach(function(p){if(p.text){full+=p.text;onText(full)}});if(c.groundingMetadata)meta=c.groundingMetadata}}catch(z){}
-  });
+  var ls=buf.split('\n');buf=ls.pop();
+  ls.forEach(function(l){if(l.indexOf('data:')!==0)return;var js=l.slice(5).trim();if(!js||js==='[DONE]')return;try{onData(JSON.parse(js))}catch(z){}});
  }
- return{text:full,meta:meta};
 }
-async function gcall(body,onText){
- var ms=[cfg.model];if(cfg.model!=='gemini-flash-lite-latest')ms.push('gemini-flash-lite-latest');
- var err=null;
- for(var i=0;i<ms.length;i++){for(var k=0;k<2;k++){
-  try{return await gstream(ms[i],body,onText)}
-  catch(e){err=e;if(!e.retry)throw e;await new Promise(function(r){setTimeout(r,600)})}
- }}
+async function oai(p,url,sys,msgs,o){
+ var body={model:M(p),stream:true,max_tokens:o.json?700:600,messages:[{role:'system',content:sys}].concat(msgs)};
+ if(o.json&&p==='groq')body.response_format={type:'json_object'};
+ var r=await post(p,url,{Authorization:'Bearer '+K(p)},body),full='';
+ await sse(r,function(d){var c=d.choices&&d.choices[0],t=c&&c.delta&&c.delta.content;if(t){full+=t;if(o.onText)o.onText(full)}});
+ return{text:full,meta:null};
+}
+var CALL={
+ gemini:async function(sys,msgs,o){
+  var body={systemInstruction:{parts:[{text:sys}]},contents:msgs.map(function(h){return{role:h.role==='assistant'?'model':'user',parts:[{text:h.content}]}}),generationConfig:{maxOutputTokens:o.json?700:600}};
+  if(o.json)body.generationConfig.responseMimeType='application/json';
+  if(o.search)body.tools=[{google_search:{}}];
+  var models=[M('gemini')];if(models[0]!=='gemini-flash-lite-latest')models.push('gemini-flash-lite-latest');
+  var err=null;
+  for(var i=0;i<models.length;i++){for(var k=0;k<2;k++){
+   try{
+    var r=await post('gemini','https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(models[i])+':streamGenerateContent?alt=sse',{'x-goog-api-key':K('gemini')},body);
+    var full='',meta=null;
+    await sse(r,function(d){var c=d.candidates&&d.candidates[0];if(!c)return;((c.content&&c.content.parts)||[]).forEach(function(q){if(q.text){full+=q.text;if(o.onText)o.onText(full)}});if(c.groundingMetadata)meta=c.groundingMetadata});
+    return{text:full,meta:meta};
+   }catch(e){
+    err=e;
+    if(o.search&&body.tools&&[400,403,404].indexOf(e.http)>-1){delete body.tools;k--;continue}
+    if(!e.retry)throw e;
+    await new Promise(function(z){setTimeout(z,600)});
+   }
+  }}
+  throw err;
+ },
+ groq:function(sys,msgs,o){return oai('groq','https://api.groq.com/openai/v1/chat/completions',sys,msgs,o)},
+ openrouter:function(sys,msgs,o){return oai('openrouter','https://openrouter.ai/api/v1/chat/completions',sys,msgs,o)},
+ claude:async function(sys,msgs,o){
+  var r=await post('claude','https://api.anthropic.com/v1/messages',{'x-api-key':K('claude'),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},{model:M('claude'),max_tokens:o.json?700:600,stream:true,system:sys,messages:msgs}),full='';
+  await sse(r,function(d){if(d.type==='content_block_delta'&&d.delta&&d.delta.text){full+=d.delta.text;if(o.onText)o.onText(full)}});
+  return{text:full,meta:null};
+ }
+};
+async function llm(sys,msgs,o){
+ var ch=chain(),err=null;
+ if(!ch.length)throw new Error('Sem chave de IA.');
+ for(var i=0;i<ch.length;i++){
+  try{
+   var out=await CALL[ch[i]](sys,msgs,o);
+   if(out.text&&out.text.trim()){out.prov=ch[i];return out}
+   throw new Error('Resposta vazia de '+PNAME[ch[i]]+'.');
+  }catch(e){err=e}
+ }
  throw err;
 }
-async function gem(sys,ui){
- var body={systemInstruction:{parts:[{text:sys}]},contents:hist.map(function(h){return{role:h.role==='assistant'?'model':'user',parts:[{text:h.content}]}}),generationConfig:{responseMimeType:'application/json',maxOutputTokens:700}};
+async function ai(text,ui){
+ var sys='O teu nome é Gomezardo. És um assistente pessoal por voz, em português europeu, que responde a qualquer pergunta. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "local", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, pesquisar, musica, rota, abrir, temporizador, nota, atual ou conversa. Usa "atual" sempre que a resposta depende de informação em tempo real, recente ou factual específica que podes não saber ao certo (notícias, tempo, desporto, preços, cotações, pessoas e cargos atuais, eventos, dados e estatísticas); escreve em "texto" uma frase de pesquisa curta e clara e deixa "resposta" vazia. Usa "conversa" apenas para conhecimento geral estável, cálculos, conselhos e conversa, e responde em "resposta" com no máximo 3 frases curtas, naturais para serem ditas em voz alta. Em caso de dúvida entre "atual" e "conversa", escolhe "atual". "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, pesquisa, destino, site, nota ou etiqueta (vazio se não se aplicar). "local" é a cidade ou lugar quando a pergunta é sobre o tempo, senão vazio. "segundos" é um número, só para temporizador. "resposta" é uma frase curta e natural para dizer ao utilizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
+ hist.push({role:'user',content:text});hist=hist.slice(-10);
  var out,j;
  try{
-  out=await gcall(body,function(f){if(ui)ui(f)});
+  out=await llm(sys,hist,{json:true,onText:ui});
   j=JSON.parse(out.text.slice(out.text.indexOf('{'),out.text.lastIndexOf('}')+1));
  }catch(e){hist.pop();throw e}
  hist.push({role:'assistant',content:out.text});return j;
 }
-async function live(q){
+
+function tmo(ms){var c=new AbortController();setTimeout(function(){c.abort()},ms);return c.signal}
+async function gj(url,opt){var r=await fetch(url,Object.assign({signal:tmo(7000)},opt||{}));if(!r.ok)throw new Error(r.status);return r.json()}
+async function srcWiki(q){
+ var langs=['pt','en'];
+ for(var i=0;i<langs.length;i++){
+  var l=langs[i];
+  var d=await gj('https://'+l+'.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch='+encodeURIComponent(q)+'&gsrlimit=3&prop=extracts&exintro=1&explaintext=1&exchars=450&redirects=1');
+  var pg=d.query&&d.query.pages;if(!pg)continue;
+  var a=Object.keys(pg).map(function(k){return pg[k]}).sort(function(x,y){return x.index-y.index}).slice(0,2);
+  if(a.length)return{name:'Wikipédia ('+l+')',text:a.map(function(x){return x.title+': '+(x.extract||'')}).join('\n'),links:a.map(function(x){return{label:'Wikipédia: '+x.title,href:'https://'+l+'.wikipedia.org/?curid='+x.pageid}})};
+ }
+ return null;
+}
+async function srcNews(q){
+ var d=await gj('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(q)+'&mode=artlist&maxrecords=6&format=json&sort=datedesc&timespan=7d');
+ var a=(d.articles||[]).slice(0,5);if(!a.length)return null;
+ return{name:'Notícias (GDELT)',text:a.map(function(x){return '- '+x.title+' ('+x.domain+', '+(x.seendate||'').slice(0,8)+')'}).join('\n'),links:a.slice(0,2).map(function(x){return{label:x.domain,href:x.url}})};
+}
+async function srcWeather(place){
+ var g=await gj('https://geocoding-api.open-meteo.com/v1/search?count=1&language=pt&name='+encodeURIComponent(place));
+ var c=g.results&&g.results[0];if(!c)return null;
+ var w=await gj('https://api.open-meteo.com/v1/forecast?latitude='+c.latitude+'&longitude='+c.longitude+'&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=3');
+ var u=w.current,dd=w.daily;
+ var t='Agora em '+c.name+(c.country?' ('+c.country+')':'')+': '+u.temperature_2m+'°C (sensação '+u.apparent_temperature+'°C), humidade '+u.relative_humidity_2m+'%, vento '+u.wind_speed_10m+' km/h, precipitação '+u.precipitation+' mm, código do tempo '+u.weather_code+'. Próximos dias (máx/mín/prob. chuva): '+dd.time.map(function(day,i){return day+': '+dd.temperature_2m_max[i]+'/'+dd.temperature_2m_min[i]+'°C, '+dd.precipitation_probability_max[i]+'%'}).join('; ')+'.';
+ return{name:'Open-Meteo',text:t,links:[{label:'Open-Meteo',href:'https://open-meteo.com'}]};
+}
+async function srcFx(){
+ var d=await gj('https://open.er-api.com/v6/latest/USD'),r=d.rates;if(!r)return null;
+ var pick=['EUR','AOA','BRL','GBP','MZN','ZAR'].filter(function(k){return r[k]}).map(function(k){return '1 USD = '+r[k]+' '+k}).join('; ');
+ return{name:'Câmbios (ExchangeRate-API)',text:pick+' (atualizado em '+(d.time_last_update_utc||'data desconhecida')+').',links:[{label:'ExchangeRate-API',href:'https://www.exchangerate-api.com'}]};
+}
+async function srcCrypto(){
+ var d=await gj('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,eur&include_24hr_change=true');
+ return{name:'CoinGecko',text:'Bitcoin: '+d.bitcoin.usd+' USD ('+d.bitcoin.usd_24h_change.toFixed(1)+'% em 24h); Ethereum: '+d.ethereum.usd+' USD ('+d.ethereum.usd_24h_change.toFixed(1)+'% em 24h).',links:[{label:'CoinGecko',href:'https://www.coingecko.com'}]};
+}
+async function srcTavily(q){
+ var d=await gj('https://api.tavily.com/search',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+K('tavily')},body:JSON.stringify({api_key:K('tavily'),query:q,max_results:5,include_answer:true})});
+ var a=(d.results||[]).slice(0,5);if(!a.length&&!d.answer)return null;
+ return{name:'Pesquisa web (Tavily)',text:(d.answer?'Resumo: '+d.answer+'\n':'')+a.map(function(x){return '- '+x.title+': '+(x.content||'').slice(0,300)}).join('\n'),links:a.slice(0,3).map(function(x){return{label:(x.title||'Fonte').slice(0,28),href:x.url}})};
+}
+async function gather(q,local){
+ var jobs=[],t=norm(q);
+ jobs.push(srcWiki(q));jobs.push(srcNews(q));
+ if(K('tavily'))jobs.push(srcTavily(q));
+ if(local||/\b(tempo|clima|temperatura|chuva|previsao|chover|calor|frio)\b/.test(t))jobs.push(srcWeather(local||q.replace(/^.*\b(em|de|para|no|na)\s+/i,'')));
+ if(/(dolar|euro|kwanza|cambio|cotacao|libra|rand)/.test(t))jobs.push(srcFx());
+ if(/(bitcoin|ethereum|cripto|btc)/.test(t))jobs.push(srcCrypto());
+ var rs=await Promise.all(jobs.map(function(p){return p.catch(function(){return null})}));
+ return rs.filter(Boolean);
+}
+async function live(q,local){
  var S=mkStream();
  try{
-  var body={systemInstruction:{parts:[{text:'És o Gomezardo, assistente por voz em português europeu. Responde em no máximo 4 frases curtas, naturais para serem ditas em voz alta, usando apenas factos atuais confirmados pela pesquisa. Agora são '+new Date().toLocaleString('pt-PT')+'.'}]},contents:[{role:'user',parts:[{text:q}]}],tools:[{google_search:{}}],generationConfig:{maxOutputTokens:600}};
-  var out=await gcall(body,function(f){S.update(f)});
-  if(!out.text.trim())throw new Error('vazio');
+  st.textContent='A consultar fontes…';
+  var src=await gather(q,local);
+  var ctx=src.length?src.map(function(s,i){return '['+(i+1)+'] '+s.name+':\n'+s.text}).join('\n\n'):'(nenhuma fonte devolveu dados)';
+  var sys='És o Gomezardo, assistente por voz em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Responde à pergunta em no máximo 5 frases curtas, naturais para serem ditas em voz alta. Usa os dados das fontes abaixo, recolhidos agora, e diz de onde vêm (por exemplo: segundo a Wikipédia). Se as fontes não chegarem, usa o que sabes e diz que não confirmaste. Nunca inventes números. Códigos do tempo WMO: 0 limpo, 1 a 3 pouco a muito nublado, 45 e 48 nevoeiro, 51 a 67 chuvisco ou chuva, 71 a 77 neve, 80 a 82 aguaceiros, 95 a 99 trovoada.\n\nFONTES:\n'+ctx;
+  st.textContent='A pensar…';
+  var out=await llm(sys,[{role:'user',content:q}],{search:true,onText:function(f){S.update(f)}});
   S.finish(out.text);
-  var ch=(out.meta&&out.meta.groundingChunks)||[],acts=[];
-  ch.slice(0,3).forEach(function(c){if(c.web&&c.web.uri)acts.push({label:(c.web.title||'Fonte').slice(0,28),href:c.web.uri})});
-  if(acts.length)S.acts(acts);
+  var links=[];
+  src.forEach(function(s){(s.links||[]).forEach(function(l){links.push(l)})});
+  var ch=(out.meta&&out.meta.groundingChunks)||[];
+  ch.forEach(function(c){if(c.web&&c.web.uri)links.push({label:c.web.title||'Fonte',href:c.web.uri})});
+  links=links.slice(0,4).map(function(l){return{label:String(l.label).slice(0,26),href:l.href}});
+  if(links.length)S.acts(links);
  }catch(e){
   if(S.empty())S.el.remove();
-  say('Não consegui pesquisar agora. Posso abrir a pesquisa no Google.',[{label:'Abrir pesquisa',href:'https://www.google.com/search?q='+encodeURIComponent(q),p:true}]);
+  say('Não consegui obter a resposta agora. Posso abrir a pesquisa no Google.',[{label:'Abrir pesquisa',href:'https://www.google.com/search?q='+encodeURIComponent(q),p:true}]);
  }
+ st.textContent='';
 }
+
 /* ---------- execução ---------- */
 function doContact(a,c,body){var n=digits(c.phone);
  if(a==='ligar'){var N=nat();
@@ -313,7 +402,7 @@ async function run(alts){
   if(/^(sim|confirma|confirmo|pode ser|vai|claro|ok|isso|avanca|faz|liga)$/.test(q)){var p=pending;pending=null;launch(p.href);say('Feito.');return}
   if(/^(nao|cancela|cancelar|esquece|deixa|para)$/.test(q)){pending=null;say('Cancelado.');return}
   pending=null}
- if(!cfg.key){say('Falta a chave da API para eu perceber os pedidos.',[{label:'Abrir definições',fn:function(){tab('s')},p:true}]);return}
+ if(!chain().length){say('Falta a chave da API para eu perceber os pedidos.',[{label:'Abrir definições',fn:function(){tab('s')},p:true}]);return}
  busy=true;st.textContent='A pensar…';
  var S=null,msg=first+(alts.length>1?'\n(outras interpretações do áudio: '+alts.slice(1,4).join(' | ')+')':'');
  try{
@@ -322,7 +411,7 @@ async function run(alts){
    if(a==='conversa'){var r=extractResp(full);if(r!==null){if(!S)S=mkStream();S.update(r)}}
   });
   if(j.acao==='conversa'&&S)S.finish(j.resposta||null);
-  else if(j.acao==='atual'&&cfg.prov==='gemini')await live(j.texto||first);
+  else if(j.acao==='atual')await live(j.texto||first,j.local);
   else act(j);
  }catch(e){
   if(S&&S.empty())S.el.remove();
@@ -389,10 +478,27 @@ $('cf').onsubmit=function(e){e.preventDefault();contacts.push({name:$('cn').valu
  contacts.sort(function(a,b){return a.name.localeCompare(b.name,'pt')});put('av3_c',contacts);renderContacts();$('cn').value='';$('cp').value=''};
 $('nf').onsubmit=function(e){e.preventDefault();notes.unshift({t:$('nt').value.trim(),d:new Date().toLocaleString('pt-PT')});put('av3_n',notes);renderNotes();$('nt').value=''};
 $('f').onsubmit=function(e){e.preventDefault();var v=$('txt').value;$('txt').value='';run(v)};
-$('prov').value=cfg.prov;$('key').value=cfg.key;$('mod').value=cfg.model;$('sp').checked=cfg.speak;
-$('prov').onchange=function(){var m=$('mod').value.trim();if(!m||m===DEF.gemini||m===DEF.claude)$('mod').value=DEF[$('prov').value]};
-$('sv').onclick=function(){cfg.prov=$('prov').value;cfg.key=$('key').value.trim();cfg.model=$('mod').value.trim()||DEF[cfg.prov];cfg.speak=$('sp').checked;put('av3_cfg',cfg);
- if(!cfg.speak)try{speechSynthesis.cancel()}catch(e){}tab('a');say('Definições guardadas.')};
+var PROVS=['gemini','groq','openrouter','claude'];
+(function(){
+ var box=$('prv'),sel=$('prov');
+ PROVS.forEach(function(p){
+  var o=document.createElement('option');o.value=p;o.textContent=PNAME[p];sel.appendChild(o);
+  var l=document.createElement('label');l.textContent='Chave '+PNAME[p];l.htmlFor='k-'+p;box.appendChild(l);
+  var k=document.createElement('input');k.type='password';k.id='k-'+p;k.autocomplete='off';k.placeholder='Cole a chave (opcional)';k.value=K(p);box.appendChild(k);
+  var m=document.createElement('input');m.type='text';m.id='m-'+p;m.setAttribute('aria-label','Modelo '+PNAME[p]);m.value=M(p);box.appendChild(m);
+ });
+ var l=document.createElement('label');l.textContent='Pesquisa web (Tavily, opcional)';l.htmlFor='k-tavily';box.appendChild(l);
+ var k=document.createElement('input');k.type='password';k.id='k-tavily';k.autocomplete='off';k.placeholder='Chave Tavily (opcional)';k.value=K('tavily');box.appendChild(k);
+})();
+$('prov').value=cfg.prov;$('sp').checked=cfg.speak;
+$('sv').onclick=function(){
+ cfg.prov=$('prov').value;cfg.keys=cfg.keys||{};cfg.models=cfg.models||{};
+ PROVS.forEach(function(p){cfg.keys[p]=$('k-'+p).value.trim();cfg.models[p]=$('m-'+p).value.trim()||DEFM[p]});
+ cfg.keys.tavily=$('k-tavily').value.trim();
+ cfg.speak=$('sp').checked;put('av3_cfg',cfg);
+ if(!cfg.speak)try{speechSynthesis.cancel()}catch(e){}
+ tab('a');say('Definições guardadas.');
+};
 
 /* ---------- senha das definições ---------- */
 function guard(){
@@ -435,7 +541,7 @@ if(/iphone|ipad/i.test(navigator.userAgent)&&!navigator.standalone)$('ios').hidd
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(function(){});
 
 renderContacts();renderNotes();
-bubble('a',cfg.key?'Olá, sou o Gomezardo. Diga ou escreva o que precisa.':'Para começar, introduza a chave da API nas Definições.');
+bubble('a',chain().length?'Olá, sou o Gomezardo. Diga ou escreva o que precisa.':'Para começar, introduza a chave da API nas Definições.');
 })();
 </script>
 </body>
