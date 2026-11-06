@@ -285,7 +285,7 @@ async function llm(sys,msgs,o){
  throw err;
 }
 async function ai(text,ui){
- var sys='O teu nome é Gomezardo. És um assistente de IA por voz e chat, em português europeu, que responde diretamente a qualquer pergunta, como um chat. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "local", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, musica, rota, abrir, temporizador, nota, atual ou conversa. Usa "conversa" para praticamente tudo: perguntas de conhecimento, pessoas, países, cargos, história, ciência, explicações, cálculos, traduções, conselhos, ideias, textos e conversa. Nesse caso responde diretamente em "resposta", de forma clara e útil: 1 a 3 frases para perguntas simples e até 8 frases quando pedirem explicações ou histórias, sempre naturais para serem ditas em voz alta. Nunca digas que vais pesquisar e nunca mandes o utilizador pesquisar noutro lado. Usa "atual" só quando a resposta depende de dados que mudam todos os dias: previsão do tempo, notícias do dia, resultados desportivos recentes, preços, câmbios e cotações; nesse caso escreve em "texto" uma frase de pesquisa curta e deixa "resposta" vazia. Em caso de dúvida, usa "conversa". "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, destino, site, nota ou etiqueta (vazio se não se aplicar). "local" é a cidade ou lugar quando a pergunta é sobre o tempo, senão vazio. "segundos" é um número, só para temporizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
+ var sys='O teu nome é Gomezardo. És um assistente de IA por voz e chat, em português europeu, que responde diretamente a qualquer pergunta, como um chat. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "local", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, musica, rota, abrir, temporizador, nota, atual ou conversa. Usa "conversa" para praticamente tudo: perguntas de conhecimento, pessoas, países, cargos, história, ciência, explicações, cálculos, traduções, conselhos, ideias, textos e conversa. Nesse caso responde diretamente em "resposta", de forma clara e útil: 1 a 3 frases para perguntas simples e até 8 frases quando pedirem explicações ou histórias, sempre naturais para serem ditas em voz alta. Nunca digas que vais pesquisar e nunca mandes o utilizador pesquisar noutro lado. Usa "atual" quando a resposta depende de dados que mudam ou que podem ter mudado desde o teu treino: quem ocupa atualmente um cargo (presidentes, primeiros-ministros, treinadores, diretores), previsão do tempo, notícias, resultados desportivos, preços, câmbios e cotações; nesse caso escreve em "texto" a pergunta completa e deixa "resposta" vazia. O teu conhecimento pode estar desatualizado, por isso nunca afirmes quem ocupa um cargo sem usar "atual". Para tudo o resto, usa "conversa". "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, destino, site, nota ou etiqueta (vazio se não se aplicar). "local" é a cidade ou lugar quando a pergunta é sobre o tempo, senão vazio. "segundos" é um número, só para temporizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
  hist.push({role:'user',content:text});hist=hist.slice(-20);
  var out,j;
  try{
@@ -335,9 +335,25 @@ async function srcTavily(q){
  var a=(d.results||[]).slice(0,5);if(!a.length&&!d.answer)return null;
  return{name:'Pesquisa web (Tavily)',text:(d.answer?'Resumo: '+d.answer+'\n':'')+a.map(function(x){return '- '+x.title+': '+(x.content||'').slice(0,300)}).join('\n'),links:a.slice(0,3).map(function(x){return{label:(x.title||'Fonte').slice(0,28),href:x.url}})};
 }
-async function gather(q,local){
+async function srcOffice(cargo){
+ var w='https://www.wikidata.org/w/api.php?format=json&origin=*&';
+ var s=await gj(w+'action=wbsearchentities&language=en&limit=1&search='+encodeURIComponent(cargo));
+ var id=s.search&&s.search[0]&&s.search[0].id;if(!id)return null;
+ var e=await gj(w+'action=wbgetentities&props=claims&ids='+id);
+ var cl=(e.entities&&e.entities[id]&&e.entities[id].claims&&e.entities[id].claims.P1308)||[];
+ var start=function(c){var q=c.qualifiers&&c.qualifiers.P580;return q&&q[0].datavalue?q[0].datavalue.value.time:''};
+ var cur=cl.filter(function(c){return !(c.qualifiers&&c.qualifiers.P582)&&c.rank!=='deprecated'&&c.mainsnak&&c.mainsnak.datavalue});
+ if(!cur.length)return null;
+ cur.sort(function(a,b){return start(b)>start(a)?1:-1});
+ var top=cur.slice(0,2),ids=top.map(function(c){return c.mainsnak.datavalue.value.id});
+ var l=await gj(w+'action=wbgetentities&props=labels&languages=pt|en&ids='+ids.join('|'));
+ var names=top.map(function(c,i){var en=l.entities[ids[i]],lab=((en.labels&&(en.labels.pt||en.labels.en))||{}).value||ids[i],d=start(c).slice(1,11);return lab+(d?' (no cargo desde '+d+')':'')});
+ return{name:'Wikidata (titular atual do cargo, base de dados oficial)',text:'Cargo «'+cargo+'»: '+names.join('; ')+'.',links:[{label:'Wikidata',href:'https://www.wikidata.org/wiki/'+id}]};
+}
+async function gather(q,local,cargo){
  var jobs=[],t=norm(q);
  jobs.push(srcWiki(q));jobs.push(srcNews(q));
+ if(cargo)jobs.push(srcOffice(cargo));
  if(K('tavily'))jobs.push(srcTavily(q));
  if(local||/\b(tempo|clima|temperatura|chuva|previsao|chover|calor|frio)\b/.test(t))jobs.push(srcWeather(local||q.replace(/^.*\b(em|de|para|no|na)\s+/i,'')));
  if(/(dolar|euro|kwanza|cambio|cotacao|libra|rand)/.test(t))jobs.push(srcFx());
@@ -348,14 +364,24 @@ async function gather(q,local){
 function keep(t){
  if(hist.length&&hist[hist.length-1].role==='assistant')hist[hist.length-1].content=JSON.stringify({acao:'conversa',contacto:'',texto:'',local:'',segundos:0,resposta:t});
 }
+function needsLive(t){return /\b(atual|atualmente|presidente|presidentes|primeiro ministro|ministro|ministra|rei|rainha|governador|papa|ceo|diretor|treinador|campeao|campeoes|ultimo|ultima|ultimos|ultimas|mais recente|recentemente|quem ganhou|quem venceu|resultado|resultados|classificacao|preco|precos|custa|cotacao|cambio|dolar|euro|kwanza|bitcoin|noticia|noticias|previsao|temperatura|chuva|clima|2025|2026)\b/.test(norm(t))}
+var CMD=/^(liga|ligar|telefona|telefonar|chama|chamar|envia|enviar|manda|mandar|escreve|escrever|whatsapp|zap|anota|anotar|aponta|apontar|toca|tocar|leva|levar|abre|abrir|avisa|lembra|alarme|timer|temporizador|navega|rota|calcula|calcular)\b/;
+async function plan(q){
+ try{
+  var out=await llm('Converte a pergunta numa pesquisa. Responde APENAS com JSON válido com os campos "pesquisa" (palavras-chave curtas em português), "cargo" (nome em inglês do cargo ou função, como aparece na Wikipédia em inglês, se a pergunta for sobre quem o ocupa atualmente; senão vazio) e "local" (cidade, se a pergunta for sobre o tempo; senão vazio).',[{role:'user',content:q}],{json:true});
+  return JSON.parse(out.text.slice(out.text.indexOf('{'),out.text.lastIndexOf('}')+1));
+ }catch(e){return{}}
+}
 async function live(q,local){
  var S=mkStream();
  try{
   st.textContent='A consultar fontes…';
+  var pl=await Promise.race([plan(q),new Promise(function(r){setTimeout(function(){r({})},3500)})]);
   var src=[];
-  try{src=await Promise.race([gather(q,local),new Promise(function(r){setTimeout(function(){r([])},4500)})])}catch(z){src=[]}
+  try{src=await Promise.race([gather(pl.pesquisa||q,local||pl.local||'',pl.cargo||''),new Promise(function(r){setTimeout(function(){r([])},4500)})])}catch(z){src=[]}
+  src.sort(function(a,b){return (a.name.indexOf('Wikidata')===0?0:1)-(b.name.indexOf('Wikidata')===0?0:1)});
   var ctx=src.length?src.map(function(s,i){return '['+(i+1)+'] '+s.name+':\n'+s.text}).join('\n\n'):'(sem dados de fontes externas)';
-  var sys='És o Gomezardo, assistente de IA por voz e chat, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Responde diretamente à pergunta, em no máximo 5 frases curtas, naturais para serem ditas em voz alta. Usa os dados das fontes abaixo, recolhidos agora, e diz de onde vêm (por exemplo: segundo a Wikipédia). Se as fontes não chegarem, responde com o que sabes e diz que não confirmaste em tempo real. Nunca mandes o utilizador pesquisar noutro lado e nunca inventes números. Códigos do tempo WMO: 0 limpo, 1 a 3 pouco a muito nublado, 45 e 48 nevoeiro, 51 a 67 chuvisco ou chuva, 71 a 77 neve, 80 a 82 aguaceiros, 95 a 99 trovoada.\n\nFONTES:\n'+ctx;
+  var sys='És o Gomezardo, assistente de IA por voz e chat, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Responde diretamente à pergunta, em no máximo 5 frases curtas, naturais para serem ditas em voz alta. O teu conhecimento de treino pode estar desatualizado: se as fontes abaixo indicarem algo diferente do que sabes, confia nas fontes, porque são mais recentes. Dá prioridade ao Wikidata (base de dados oficial de cargos) e a notícias com data recente, e ignora páginas sem data ou desatualizadas. Diz de onde vêm os dados (por exemplo: segundo o Wikidata). Se as fontes não chegarem, responde com o que sabes e diz que não confirmaste em tempo real. Nunca mandes o utilizador pesquisar noutro lado e nunca inventes números. Códigos do tempo WMO: 0 limpo, 1 a 3 pouco a muito nublado, 45 e 48 nevoeiro, 51 a 67 chuvisco ou chuva, 71 a 77 neve, 80 a 82 aguaceiros, 95 a 99 trovoada.\n\nFONTES:\n'+ctx;
   st.textContent='A pensar…';
   var msgs=[{role:'user',content:q}],out;
   try{out=await llm(sys,msgs,{search:true,onText:function(f){S.update(f)}})}
@@ -411,6 +437,13 @@ async function run(alts){
   pending=null}
  if(!chain().length){say('Falta a chave da API para eu perceber os pedidos.',[{label:'Abrir definições',fn:function(){tab('s')},p:true}]);return}
  busy=true;st.textContent='A pensar…';
+ if(needsLive(first)&&!CMD.test(clean(first))){
+  hist.push({role:'user',content:first},{role:'assistant',content:'{}'});hist=hist.slice(-20);
+  await live(first,null);
+  busy=false;st.textContent='';
+  if(!speaking())idle();
+  return;
+ }
  var S=null,msg=first+(alts.length>1?'\n(outras interpretações do áudio: '+alts.slice(1,4).join(' | ')+')':'');
  try{
   var j=await ai(msg,function(full){
