@@ -26,6 +26,38 @@
 @keyframes ring2{to{box-shadow:0 0 0 16px transparent}}
 #snd{background:var(--acc);color:var(--onacc)}
 .pm{display:flex;gap:8px;flex-wrap:wrap}
+details.adv{border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+details.adv summary{cursor:pointer;font-weight:700}
+.vm{position:fixed;inset:0;z-index:60;background:#000;color:#fff;display:flex;flex-direction:column;padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom))}
+.vm-top{display:flex;justify-content:space-between}
+.vm-ic{flex:none;width:50px;height:50px;border-radius:50%;border:0;background:#262626;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.vm-ic.sm{width:42px;height:42px;background:none}
+.vm-center{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px}
+.orb{width:min(62vw,280px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 14%,#f9a8d4 0%,#fbc9e1 20%,#fde6f1 46%,#fff4f9 78%);box-shadow:0 0 70px rgba(244,114,182,.28)}
+.orb.idle{animation:breathe 4s ease-in-out infinite}
+.orb.listening{animation:listen 1.5s ease-in-out infinite}
+.orb.thinking{animation:think 1.2s ease-in-out infinite}
+.orb.speaking{animation:talk .6s ease-in-out infinite alternate}
+.orb.weak{opacity:.6}
+@keyframes breathe{50%{transform:scale(1.04)}}
+@keyframes listen{50%{transform:scale(1.08);box-shadow:0 0 90px rgba(244,114,182,.5)}}
+@keyframes think{0%,100%{transform:scale(.95);opacity:.8}50%{transform:scale(1.02);opacity:1}}
+@keyframes talk{to{transform:scale(1.13);box-shadow:0 0 100px rgba(244,114,182,.55)}}
+.vm-st{font-weight:800;font-size:1.15rem;text-shadow:0 0 6px #000,0 0 2px #000}
+.vm-cap{max-width:86%;text-align:center;color:#d4d4d8;font-size:.95rem;line-height:1.4;max-height:6.6em;overflow:hidden}
+.vm-bar{display:flex;align-items:center;gap:8px}
+.vm-bar .pill{flex:1;min-width:0;display:flex;align-items:center;gap:4px;background:#262626;border-radius:30px;padding:4px 14px 4px 4px}
+.vm-bar input{flex:1;min-width:0;border:0;background:none;color:#fff;font:inherit;font-weight:700;padding:10px 4px;border-radius:0}
+.vm-bar input::placeholder{color:#fff;opacity:.92}
+.vm-bar input:focus-visible{outline:none}
+#vx{background:#fff;color:#000;width:54px;height:54px}
+#vmic[aria-pressed=true]{background:#7f1d1d}
+.vm-tr{background:#171717;border-radius:18px;padding:14px;margin-bottom:10px;max-height:38vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.vm-tr .tu{align-self:flex-end;background:#0f8b8d;border-radius:14px;padding:8px 12px;max-width:85%}
+.vm-tr .ta{background:#262626;border-radius:14px;padding:8px 12px;max-width:90%}
+.vm-tr label{display:flex;flex-direction:column;gap:6px;font-weight:600}
+.vm-tr select{padding:10px;border-radius:12px;border:0;background:#262626;color:#fff;font:inherit}
+@media(prefers-reduced-motion:reduce){.orb{animation:none!important}}
 @media(prefers-reduced-motion:reduce){#mic.on,#cv[aria-pressed=true]{animation:none}}
 .m .md p{margin:0 0 .55em}.m .md p:last-child{margin-bottom:0}
 .m .md ul,.m .md ol{margin:.2em 0 .55em;padding-left:1.25em}.m .md li{margin:.2em 0}
@@ -127,10 +159,14 @@ label{display:block;font-weight:600;margin:12px 0 6px}
       <button class="act" id="rst" type="button" hidden>Esqueci a senha (apagar tudo)</button>
     </div>
     <div class="card stack" id="sc" hidden>
+      <details class="adv"><summary>Avançado: serviços de IA e chaves</summary>
       <label for="prov" style="margin-top:0">Serviço principal de IA</label>
       <select id="prov" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"></select>
       <div id="prv" class="stack"></div>
       <p class="muted">Chaves gratuitas: aistudio.google.com/apikey (Gemini), console.groq.com/keys (Groq), openrouter.ai/keys (OpenRouter), tavily.com (pesquisa web). Se um serviço falhar ou atingir o limite, o Gomezardo passa sozinho ao seguinte que tiver chave.</p>
+      <label class="dock" style="font-weight:400"><input type="checkbox" id="ss" style="flex:none"> Mostrar as fontes das respostas</label>
+      <label class="dock" style="font-weight:400"><input type="checkbox" id="sx" style="flex:none"> Dados extra (tempo, câmbios, cripto e Tavily)</label>
+      </details>
       <label for="vk">Tipo de voz do Gomezardo</label>
       <select id="vk" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="gemini">Voz de alta qualidade (Gemini)</option><option value="device">Voz do telemóvel</option></select>
       <label for="gv">Personagem da voz de alta qualidade</label>
@@ -148,8 +184,9 @@ label{display:block;font-weight:600;margin:12px 0 6px}
       <select id="vm" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="run">Executar logo o pedido</option><option value="type">Escrever na caixa para eu rever</option></select>
       <label class="dock" style="font-weight:400;margin:12px 0 0"><input type="checkbox" id="sp" style="flex:none"> Responder em voz</label>
       <button class="act p" id="sv" type="button" style="margin-top:12px">Guardar definições</button>
-      <button class="act" id="dgb" type="button">Testar ligações</button>
-      <div id="dg" class="muted" style="white-space:pre-line"></div>
+      <details class="adv"><summary>Diagnóstico</summary>
+      <button class="act" id="dgb" type="button" style="margin-top:8px">Testar ligações</button>
+      <div id="dg" class="muted" style="white-space:pre-line"></div></details>
       <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados aos serviços de IA configurados. As perguntas sobre atualidade também vão a fontes públicas (Wikipédia, notícias GDELT, Open-Meteo, câmbios e, se tiver chave, pesquisa web).</p>
       <button class="act" id="inst" type="button" hidden>Instalar a app</button>
       <button class="act" id="lockbtn" type="button">Bloquear definições</button>
@@ -158,18 +195,44 @@ label{display:block;font-weight:600;margin:12px 0 6px}
   </section>
 </main>
 
+<div id="vmo" class="vm" hidden role="dialog" aria-label="Conversa por voz">
+  <div class="vm-top">
+    <button type="button" class="vm-ic" id="vmenu" aria-label="Ver a conversa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 8h12M4 16h16"/></svg></button>
+    <button type="button" class="vm-ic" id="vset" aria-label="Definições de voz"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2.2"/><circle cx="9" cy="16" r="2.2"/></svg></button>
+  </div>
+  <div class="vm-center">
+    <div id="orb" class="orb idle"></div>
+    <div id="vst" class="vm-st">A ouvir…</div>
+    <div id="vcap" class="vm-cap"></div>
+  </div>
+  <div id="vtr" class="vm-tr" hidden></div>
+  <div id="vsheet" class="vm-tr" hidden>
+    <label>Voz do Gomezardo<select id="vk2"></select></label>
+    <label>Personagem<select id="gv2"></select></label>
+    <label>Velocidade<input id="vr2" type="range" min="0.6" max="1.6" step="0.1"></label>
+  </div>
+  <form id="vf" class="vm-bar">
+    <div class="pill">
+      <button type="button" class="vm-ic sm" id="vplus" aria-label="Nova conversa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <input id="vtxt" placeholder="Perguntar ao Gomezardo" autocomplete="off" aria-label="Escrever ao Gomezardo">
+    </div>
+    <button type="button" class="vm-ic" id="vmic" aria-pressed="false" aria-label="Ligar ou desligar o microfone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+    <button type="button" class="vm-ic" id="vx" aria-label="Terminar conversa por voz"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </form>
+</div>
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)};
 function store(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function put(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 var cfg=store('av3_cfg',{prov:'gemini',key:'',model:'gemini-flash-latest',speak:true}),contacts=store('av3_c',[]),notes=store('av3_n',[]);
-var timers=[],pending=null,on=false,rec=null,hist=[],log=$('log'),st=$('state'),busy=false,convo=false,sq=[],sp=false,gen=0,wantListen=false;
+var timers=[],pending=null,on=false,rec=null,hist=[],log=$('log'),st=$('state'),busy=false,convo=false,sq=[],sp=false,gen=0,wantListen=false,weak=false,chat=[];
 
 if(!cfg.prov)cfg.prov='claude';
 var DEFM={gemini:'gemini-flash-latest',groq:'llama-3.3-70b-versatile',openrouter:'meta-llama/llama-3.3-70b-instruct:free',claude:'claude-haiku-5-5'};
 if(!cfg.keys){cfg.keys={};cfg.models={};if(cfg.key)cfg.keys[cfg.prov]=cfg.key;if(cfg.model)cfg.models[cfg.prov]=cfg.model}
 if(cfg.rate==null)cfg.rate=1;if(cfg.pitch==null)cfg.pitch=1;if(!cfg.lang)cfg.lang='pt-PT';if(!cfg.micmode)cfg.micmode='run';if(cfg.voice==null)cfg.voice='';if(!cfg.vmode)cfg.vmode='gemini';if(!cfg.gvoice)cfg.gvoice='Kore';if(!cfg.tts)cfg.tts='gemini-3.1-flash-tts-preview';
+if(!cfg.vdef){cfg.vmode='device';cfg.vdef=1}
 var unlocked=false,fails=0,until=0,PW=store('av3_pw',null);
 function nat(){return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.DirectCall||null}
 /* ---------- utilitários ---------- */
@@ -383,11 +446,11 @@ async function post(p,url,headers,body){
  var r,ac=new AbortController(),tm=setTimeout(function(){ac.abort()},T_CONN);
  try{r=await fetch(url,{method:'POST',headers:Object.assign({'content-type':'application/json'},headers),body:JSON.stringify(body),signal:ac.signal})}
  catch(e){
-  clearTimeout(tm);
+  clearTimeout(tm);weak=true;
   var te=new Error(ac.signal.aborted?'o serviço '+PNAME[p]+' demorou demasiado':'Sem ligação à internet.');
   te.retry=ac.signal.aborted;throw te;
  }
- clearTimeout(tm);
+ clearTimeout(tm);weak=false;
  if(!r.ok)throw herr(p,r.status);
  return r;
 }
@@ -453,7 +516,7 @@ async function llm(sys,msgs,o){
  throw err;
 }
 async function ai(text,ui){
- var sys='O teu nome é Gomezardo. És um assistente de IA por voz e chat, em português europeu, que responde diretamente a qualquer pergunta, como um chat. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "local", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, musica, rota, abrir, temporizador, nota, atual ou conversa. Usa "conversa" para praticamente tudo: perguntas de conhecimento, pessoas, países, cargos, história, ciência, explicações, cálculos, traduções, conselhos, ideias, textos e conversa. Nesse caso responde diretamente em "resposta", de forma clara e útil: com a extensão que a pergunta merece: curta se for simples, mais completa e detalhada se for complexa ou se pedirem explicações, histórias ou textos, sempre com frases naturais para serem ditas em voz alta. Ajudas com qualquer assunto. Formata com Markdown simples: começa com uma frase direta a negrito (**...**) e, quando ajudar, acrescenta 3 a 5 tópicos no formato «- **Etiqueta:** valor»; perguntas simples levam só 1 ou 2 frases, sem tópicos. Dentro do JSON, usa \\n para mudar de linha. Nunca digas que vais pesquisar e nunca mandes o utilizador pesquisar noutro lado. Usa "atual" quando a resposta depende de dados que mudam ou que podem ter mudado desde o teu treino: quem ocupa atualmente um cargo (presidentes, primeiros-ministros, treinadores, diretores), previsão do tempo, notícias, resultados desportivos, preços, câmbios e cotações; nesse caso escreve em "texto" a pergunta completa e deixa "resposta" vazia. O teu conhecimento pode estar desatualizado, por isso nunca afirmes quem ocupa um cargo sem usar "atual". Para tudo o resto, usa "conversa". "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, destino, site, nota ou etiqueta (vazio se não se aplicar). "local" é a cidade ou lugar quando a pergunta é sobre o tempo, senão vazio. "segundos" é um número, só para temporizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
+ var sys='O teu nome é Gomezardo. És um assistente de IA por voz e chat, em português europeu, que responde diretamente a qualquer pergunta, como um chat. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "local", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, musica, rota, abrir, temporizador, nota ou conversa. Usa "conversa" para praticamente tudo: perguntas de conhecimento, pessoas, países, cargos, história, ciência, explicações, cálculos, traduções, conselhos, ideias, textos e conversa. Nesse caso responde diretamente em "resposta", de forma clara e útil: com a extensão que a pergunta merece: curta se for simples, mais completa e detalhada se for complexa ou se pedirem explicações, histórias ou textos, sempre com frases naturais para serem ditas em voz alta. Ajudas com qualquer assunto. Falas como uma IA conversacional normal, simpática e natural, em linguagem simples, sem jargão técnico nem código, a menos que o utilizador peça. Formata com Markdown simples: começa com uma frase direta a negrito (**...**) e, quando ajudar, acrescenta 3 a 5 tópicos no formato «- **Etiqueta:** valor»; perguntas simples levam só 1 ou 2 frases, sem tópicos. Dentro do JSON, usa \\n para mudar de linha. Nunca digas que vais pesquisar e nunca mandes o utilizador pesquisar noutro lado. Para tudo o resto, usa "conversa". "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, destino, site, nota ou etiqueta (vazio se não se aplicar). "local" é a cidade ou lugar quando a pergunta é sobre o tempo, senão vazio. "segundos" é um número, só para temporizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
  hist.push({role:'user',content:text});hist=hist.slice(-40);
  var out,j;
  try{
@@ -465,26 +528,6 @@ async function ai(text,ui){
 
 function tmo(ms){var c=new AbortController();setTimeout(function(){c.abort()},ms);return c.signal}
 async function gj(url,opt){var r=await fetch(url,Object.assign({signal:tmo(5000)},opt||{}));if(!r.ok)throw new Error(r.status);return r.json()}
-async function srcWiki(q){
- var langs=['pt','en'];
- for(var i=0;i<langs.length;i++){
-  var l=langs[i];
-  var d=await gj('https://'+l+'.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch='+encodeURIComponent(q)+'&gsrlimit=3&prop=extracts&exintro=1&explaintext=1&exchars=800&redirects=1');
-  var pg=d.query&&d.query.pages;if(!pg)continue;
-  var a=Object.keys(pg).map(function(k){return pg[k]}).sort(function(x,y){return x.index-y.index}).slice(0,2);
-  if(a.length)return{name:'Wikipédia ('+l+')',text:a.map(function(x){return x.title+': '+(x.extract||'')}).join('\n'),links:a.map(function(x){return{label:'Wikipédia: '+x.title,href:'https://'+l+'.wikipedia.org/?curid='+x.pageid}})};
- }
- return null;
-}
-async function srcNews(q){
- var spans=['3d','30d'];
- for(var i=0;i<spans.length;i++){
-  var d=await gj('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(q)+'&mode=artlist&maxrecords=6&format=json&sort=datedesc&timespan='+spans[i]);
-  var a=(d.articles||[]).slice(0,5);
-  if(a.length)return{name:'Notícias recentes (GDELT, últimos '+spans[i].replace('d',' dias')+')',text:a.map(function(x){return '- '+x.title+' ('+x.domain+', '+(x.seendate||'').slice(0,8)+')'}).join('\n'),links:a.slice(0,2).map(function(x){return{label:x.domain,href:x.url}})};
- }
- return null;
-}
 async function srcWeather(place){
  var g=await gj('https://geocoding-api.open-meteo.com/v1/search?count=1&language=pt&name='+encodeURIComponent(place));
  var c=g.results&&g.results[0];if(!c)return null;
@@ -507,87 +550,51 @@ async function srcTavily(q){
  var a=(d.results||[]).slice(0,5);if(!a.length&&!d.answer)return null;
  return{name:'Pesquisa web (Tavily)',text:(d.answer?'Resumo: '+d.answer+'\n':'')+a.map(function(x){return '- '+x.title+': '+(x.content||'').slice(0,300)}).join('\n'),links:a.slice(0,3).map(function(x){return{label:(x.title||'Fonte').slice(0,28),href:x.url}})};
 }
-async function srcOffice(cargo){
- var w='https://www.wikidata.org/w/api.php?format=json&origin=*&';
- var s=await gj(w+'action=wbsearchentities&language=en&limit=1&search='+encodeURIComponent(cargo));
- var id=s.search&&s.search[0]&&s.search[0].id;if(!id)return null;
- var e=await gj(w+'action=wbgetentities&props=claims&ids='+id);
- var cl=(e.entities&&e.entities[id]&&e.entities[id].claims&&e.entities[id].claims.P1308)||[];
- var start=function(c){var q=c.qualifiers&&c.qualifiers.P580;return q&&q[0].datavalue?q[0].datavalue.value.time:''};
- var cur=cl.filter(function(c){return !(c.qualifiers&&c.qualifiers.P582)&&c.rank!=='deprecated'&&c.mainsnak&&c.mainsnak.datavalue});
- if(!cur.length)return null;
- cur.sort(function(a,b){return start(b)>start(a)?1:-1});
- var top=cur.slice(0,2),ids=top.map(function(c){return c.mainsnak.datavalue.value.id});
- var l=await gj(w+'action=wbgetentities&props=labels&languages=pt|en&ids='+ids.join('|'));
- var names=top.map(function(c,i){var en=l.entities[ids[i]],lab=((en.labels&&(en.labels.pt||en.labels.en))||{}).value||ids[i],d=start(c).slice(1,11);return lab+(d?' (no cargo desde '+d+')':'')});
- var l0=((l.entities[ids[0]].labels&&(l.entities[ids[0]].labels.pt||l.entities[ids[0]].labels.en))||{}).value,ex='';
- try{var wp=await gj('https://pt.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro=1&explaintext=1&exchars=700&redirects=1&titles='+encodeURIComponent(l0||''));var pg=wp.query&&wp.query.pages,k=pg&&Object.keys(pg)[0];if(k&&pg[k].extract)ex=pg[k].extract}catch(z){}
- return{name:'Wikidata (titular atual do cargo, base de dados oficial)',text:'Cargo «'+cargo+'»: '+names.join('; ')+'.'+(ex?'\nSobre '+l0+' (Wikipédia): '+ex:''),links:[{label:'Wikidata',href:'https://www.wikidata.org/wiki/'+id}]};
-}
-async function gather(q,local,cargo){
- var jobs=[],t=norm(q);
- jobs.push(srcWiki(q));jobs.push(srcNews(q));
- if(cargo)jobs.push(srcOffice(cargo));
+async function extraData(q){
+ var t=norm(q),jobs=[];
  if(K('tavily'))jobs.push(srcTavily(q));
- if(local||/\b(tempo|clima|temperatura|chuva|previsao|chover|calor|frio)\b/.test(t))jobs.push(srcWeather(local||q.replace(/^.*\b(em|de|para|no|na)\s+/i,'')));
+ if(/\b(tempo|clima|temperatura|chuva|previsao|chover|calor|frio)\b/.test(t)){
+  var m=q.match(/\b(?:em|de|para|no|na)\s+([A-ZÀ-Ú][\p{L}-]+(?:\s+[A-ZÀ-Ú][\p{L}-]+)*)/u);
+  if(m)jobs.push(srcWeather(m[1]));
+ }
  if(/(dolar|euro|kwanza|cambio|cotacao|libra|rand)/.test(t))jobs.push(srcFx());
  if(/(bitcoin|ethereum|cripto|btc)/.test(t))jobs.push(srcCrypto());
- var rs=await Promise.all(jobs.map(function(p){return p.catch(function(){return null})}));
+ if(!jobs.length)return[];
+ var rs=await Promise.race([Promise.all(jobs.map(function(p){return p.catch(function(){return null})})),new Promise(function(r){setTimeout(function(){r([])},2500)})]);
  return rs.filter(Boolean);
 }
-function keep(t){
- if(hist.length&&hist[hist.length-1].role==='assistant')hist[hist.length-1].content=JSON.stringify({acao:'conversa',contacto:'',texto:'',local:'',segundos:0,resposta:t});
+function isCommand(t){
+ var n=clean(t);
+ return /^(liga|ligar|telefona|telefonar|chama|chamar|contacta|contactar|marca|marcar|whatsapp|zap|anota|anotar|aponta|apontar|toma nota|guarda nota|toca|tocar|poe|ouvir|reproduz|reproduzir|leva|levar|navega|navegar|direcoes|rota|como chego|abre|abrir|vai para|ir para)\b/.test(n)
+  ||/\b(envia|enviar|manda|mandar|escreve|escrever)\b.*\b(mensagem|sms|texto)\b/.test(n)
+  ||/\b(avisa|lembra|acorda|desperta|alarme|temporizador|cronometro|timer)\b/.test(n);
 }
-function needsLive(t){
- var n=norm(t),low=t.toLowerCase();
- if(!n)return false;
- if(/\b(atual|atualmente|hoje|agora|ultimo|ultima|ultimos|ultimas|recente|recentemente|2025|2026|noticia|noticias|esta semana|este mes|este ano)\b/.test(n))return true;
- if(n.split(' ').length<3&&!/\?/.test(t))return false;
- if(/^(ola|oi|bom dia|boa tarde|boa noite|obrigad|como estas|quem es tu|como te chamas|o que sabes fazer|adeus|ate logo)/.test(n))return false;
- if(/\d\s*(\+|-|\*|x|\/|mais|menos|vezes|dividido)\s*\d/.test(low))return false;
- if(/^(escreve|cria|traduz|traduza|resume|resuma|explica|explique|ajuda|corrige|inventa|conta|faz|faca|da me|gera|redige|compoe|calcula|quanto e)\b/.test(n))return false;
- return true;
-}
-var CMD=/^(liga|ligar|telefona|telefonar|chama|chamar|envia|enviar|manda|mandar|escreve|escrever|whatsapp|zap|anota|anotar|aponta|apontar|toca|tocar|leva|levar|abre|abrir|avisa|lembra|alarme|timer|temporizador|navega|rota|calcula|calcular)\b/;
-async function plan(q){
+async function chatDirect(q){
+ var S=null;function str(){return S||(S=mkStream(q))}
+ chat.push({role:'user',content:q});chat=chat.slice(-40);
  try{
-  var out=await llm('Converte a pergunta numa pesquisa. Responde APENAS com JSON válido com os campos "pesquisa" (palavras-chave curtas em português), "cargo" (nome em inglês do cargo ou função, como aparece na Wikipédia em inglês, se a pergunta for sobre quem o ocupa atualmente; senão vazio) e "local" (cidade, se a pergunta for sobre o tempo; senão vazio).',[{role:'user',content:q}],{json:true});
-  return JSON.parse(out.text.slice(out.text.indexOf('{'),out.text.lastIndexOf('}')+1));
- }catch(e){return{}}
-}
-async function live(q,local){
- var S=null;
- function str(){return S||(S=mkStream(q))}
- try{
-  st.textContent='A consultar fontes…';
-  var pl={};
-  if(/\b(presidente|presidentes|primeiro ministro|ministro|ministra|rei|rainha|governador|papa|ceo|diretor|treinador)\b/.test(norm(q)))
-   pl=await Promise.race([plan(q),new Promise(function(r){setTimeout(function(){r({})},3500)})]);
-  var src=[];
-  try{src=await Promise.race([gather(pl.pesquisa||q,local||pl.local||'',pl.cargo||''),new Promise(function(r){setTimeout(function(){r([])},4500)})])}catch(z){src=[]}
-  src.sort(function(a,b){return (a.name.indexOf('Wikidata')===0?0:1)-(b.name.indexOf('Wikidata')===0?0:1)});
-  var ctx=src.length?src.map(function(s,i){return '['+(i+1)+'] '+s.name+':\n'+s.text}).join('\n\n'):'(sem dados de fontes externas)';
-  var sys='És o Gomezardo, assistente de IA por voz e chat, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Responde diretamente à pergunta, com a extensão que ela merece (curta se for simples, mais completa se for complexa) e frases naturais para serem ditas em voz alta. Formata com Markdown simples: uma frase direta a negrito (**...**), depois, se ajudar, 3 a 5 tópicos no formato «- **Etiqueta:** valor» (por exemplo nome completo, nascimento, cargo, início do mandato, quando existirem nas fontes) e termina com uma frase de contexto. O teu conhecimento de treino pode estar desatualizado: se as fontes abaixo indicarem algo diferente do que sabes, confia nas fontes, porque são mais recentes. Dá prioridade ao Wikidata (base de dados oficial de cargos) e a notícias com data recente, e ignora páginas sem data ou desatualizadas. Diz de onde vêm os dados (por exemplo: segundo o Wikidata). Quando as notícias tiverem data, indica-a. Se as fontes não chegarem, responde com o que sabes e diz que não confirmaste em tempo real. Nunca mandes o utilizador pesquisar noutro lado e nunca inventes números. Códigos do tempo WMO: 0 limpo, 1 a 3 pouco a muito nublado, 45 e 48 nevoeiro, 51 a 67 chuvisco ou chuva, 71 a 77 neve, 80 a 82 aguaceiros, 95 a 99 trovoada.\n\nFONTES:\n'+ctx;
-  st.textContent='A pensar…';
-  var msgs=[{role:'user',content:q}],out;
-  var onT=function(f){str().update(f)};
-  var useSearch=true;
-  try{out=await llm(sys,msgs,{search:useSearch,onText:onT})}
-  catch(e1){out=await llm(sys,msgs,{search:false,onText:onT})}
+  var extra=[];
+  if(cfg.extra){try{extra=await extraData(q)}catch(z){extra=[]}}
+  var gem=chain()[0]==='gemini';
+  var sys='És o Gomezardo, uma IA conversacional normal, simpática e natural, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Respondes tu mesmo, diretamente e sem rodeios, a qualquer pergunta ou pedido, com a extensão que merece (curta se for simples, mais completa se for complexa), com frases naturais para serem ditas em voz alta e sem jargão técnico nem código, a menos que peçam. '
+   +(gem?'Tens a pesquisa em tempo real da Google: usa-a quando precisares de factos atuais (cargos, notícias, resultados, preços, tempo, datas recentes) e responde com os dados mais recentes, sem dizeres que vais pesquisar. ':'O teu conhecimento pode estar desatualizado: em factos que mudam com o tempo, diz «segundo o que sei». ')
+   +'Formata com Markdown simples: começa com uma frase direta a negrito (**...**) e, quando ajudar, acrescenta 3 a 5 tópicos no formato «- **Etiqueta:** valor»; perguntas simples levam só 1 ou 2 frases, sem tópicos. Nunca mandes o utilizador pesquisar noutro lado.'
+   +(extra.length?'\n\nDADOS EM TEMPO REAL (usa-os e diz de onde vêm; códigos do tempo WMO: 0 limpo, 1 a 3 nublado, 45 e 48 nevoeiro, 51 a 67 chuva, 71 a 77 neve, 80 a 82 aguaceiros, 95 a 99 trovoada):\n'+extra.map(function(s){return '- '+s.name+': '+s.text}).join('\n'):'');
+  var out=await llm(sys,chat,{search:true,onText:function(f){str().update(f)}});
   str().finish(out.text);
-  keep(out.text);
-  var links=[];
-  src.forEach(function(s){(s.links||[]).forEach(function(l){links.push(l)})});
-  var ch=(out.meta&&out.meta.groundingChunks)||[];
-  ch.forEach(function(c){if(c.web&&c.web.uri)links.push({label:c.web.title||'Fonte',href:c.web.uri})});
-  links=links.slice(0,4).map(function(l){return{label:String(l.label).slice(0,26),href:l.href}});
-  S.sources(links);
+  chat.push({role:'assistant',content:out.text});
+  if(cfg.showsrc){
+   var links=[];
+   extra.forEach(function(s){(s.links||[]).forEach(function(l){links.push(l)})});
+   ((out.meta&&out.meta.groundingChunks)||[]).forEach(function(c){if(c.web&&c.web.uri)links.push({label:c.web.title||'Fonte',href:c.web.uri})});
+   S.sources(links.slice(0,4).map(function(l){return{label:String(l.label).slice(0,26),href:l.href}}));
+  }
   S.tools();
  }catch(e){
+  chat.pop();
   if(S&&S.empty())S.el.remove();
   say('Não consegui responder agora ('+(e&&e.message?e.message:'erro desconhecido').replace(/\.$/,'')+').',[{label:'Tentar de novo',fn:function(){run(q)},p:true}]);
  }
- st.textContent='';
 }
 
 /* ---------- execução ---------- */
@@ -624,15 +631,15 @@ async function runInner(alts){
  if(typeof alts==='string')alts=[alts];
  var first=(alts[0]||'').trim();if(!first)return;
  bubble('u',first);stopSpeak();
+ try{if(rec&&on&&!nat())rec.stop()}catch(e){}
  if(pending){var q=norm(first);
   if(/^(sim|confirma|confirmo|pode ser|vai|claro|ok|isso|avanca|faz|liga)$/.test(q)){var p=pending;pending=null;launch(p.href);say('Feito.');return}
   if(/^(nao|cancela|cancelar|esquece|deixa|para)$/.test(q)){pending=null;say('Cancelado.');return}
   pending=null}
  if(!chain().length){say('Falta a chave da API para eu perceber os pedidos.',[{label:'Abrir definições',fn:function(){tab('s')},p:true}]);return}
  busy=true;st.textContent='A pensar…';
- if(needsLive(first)&&!CMD.test(clean(first))){
-  hist.push({role:'user',content:first},{role:'assistant',content:'{}'});hist=hist.slice(-40);
-  try{await withTimeout(live(first,null),45000,'demorou demasiado')}
+ if(!isCommand(first)){
+  try{await withTimeout(chatDirect(first),60000,'demorou demasiado')}
   catch(e){say('Não consegui responder a tempo ('+e.message+').',[{label:'Tentar de novo',fn:function(){run(first)},p:true}])}
   busy=false;st.textContent='';
   if(!speaking())idle();
@@ -645,7 +652,7 @@ async function runInner(alts){
    if(a==='conversa'){var r=extractResp(full);if(r!==null){if(!S)S=mkStream(first);S.update(r)}}
   });
   if(j.acao==='conversa'&&S){S.finish(j.resposta||null);S.tools()}
-  else if(j.acao==='atual'||j.acao==='pesquisar')await live(j.texto||first,j.local);
+  else if(j.acao==='atual'||j.acao==='pesquisar')await chatDirect(first);
   else act(j);
  }catch(e){
   if(S&&S.empty())S.el.remove();
@@ -673,11 +680,7 @@ function stopConvo(msg){
  if(msg)st.textContent=msg;
  try{if(rec&&on)rec.stop()}catch(e){}
 }
-$('cv').onclick=function(){
- if(convo){stopConvo('');stopSpeak();return}
- convo=true;idleN=0;this.setAttribute('aria-pressed','true');
- listenNow();
-};
+$('cv').onclick=openVoice;
 if(!nat()){
  if(!SR){mic.disabled=true;mic.style.opacity='.4';$('cv').disabled=true;st.textContent='Sem reconhecimento de voz neste navegador. Use o Chrome ou escreva.'}
  else{
@@ -728,12 +731,12 @@ var PROVS=['gemini','groq','openrouter','claude'];
  var l=document.createElement('label');l.textContent='Pesquisa web (Tavily, opcional)';l.htmlFor='k-tavily';box.appendChild(l);
  var k=document.createElement('input');k.type='password';k.id='k-tavily';k.autocomplete='off';k.placeholder='Chave Tavily (opcional)';k.value=K('tavily');box.appendChild(k);
 })();
-$('prov').value=cfg.prov;$('sp').checked=cfg.speak;
+$('prov').value=cfg.prov;$('sp').checked=cfg.speak;$('ss').checked=!!cfg.showsrc;$('sx').checked=!!cfg.extra;
 $('sv').onclick=function(){
  cfg.prov=$('prov').value;cfg.keys=cfg.keys||{};cfg.models=cfg.models||{};
  PROVS.forEach(function(p){cfg.keys[p]=$('k-'+p).value.trim();cfg.models[p]=$('m-'+p).value.trim()||DEFM[p]});
  cfg.keys.tavily=$('k-tavily').value.trim();
- cfg.speak=$('sp').checked;cfg.vmode=$('vk').value;cfg.gvoice=$('gv').value;ttsOff=0;cfg.voice=$('vs').value;cfg.rate=+$('vr').value;cfg.pitch=+$('vp').value;cfg.lang=$('vl').value;cfg.micmode=$('vm').value;
+ cfg.speak=$('sp').checked;cfg.showsrc=$('ss').checked;cfg.extra=$('sx').checked;cfg.vmode=$('vk').value;cfg.gvoice=$('gv').value;ttsOff=0;cfg.voice=$('vs').value;cfg.rate=+$('vr').value;cfg.pitch=+$('vp').value;cfg.lang=$('vl').value;cfg.micmode=$('vm').value;
  if(rec)rec.lang=cfg.lang;
  put('av3_cfg',cfg);
  if(!cfg.speak)try{speechSynthesis.cancel()}catch(e){}
@@ -802,7 +805,7 @@ $('ntm').onclick=function(){
 
 /* ---------- menu +, nova conversa e diagnóstico ---------- */
 $('plus').onclick=function(){$('pm').hidden=!$('pm').hidden};
-$('newc').onclick=function(){stopSpeak();hist=[];log.innerHTML='';$('pm').hidden=true;bubble('a','Nova conversa. Em que posso ajudar?')};
+$('newc').onclick=function(){stopSpeak();hist=[];chat=[];log.innerHTML='';$('pm').hidden=true;bubble('a','Nova conversa. Em que posso ajudar?')};
 $('dgb').onclick=async function(){
  var o=$('dg'),rows=[];o.textContent='A testar…';
  var ch=chain();
@@ -812,10 +815,7 @@ $('dgb').onclick=async function(){
   catch(e){rows.push('✗ '+PNAME[ch[i]]+': '+(e&&e.message?e.message:'erro'))}
  }
  if(K('gemini')){try{await withTimeout(ttsGemini('Teste'),25000,'sem resposta');rows.push('✓ Voz de alta qualidade (Gemini)')}catch(e){rows.push('✗ Voz de alta qualidade: '+(e&&e.message?e.message:'erro')+' (usa a voz do telemóvel)')}}
- var T=[['Wikipédia','https://pt.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=Angola&srlimit=1'],
-  ['Wikidata','https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&origin=*&language=en&limit=1&search=Angola'],
-  ['Notícias (GDELT)','https://api.gdeltproject.org/api/v2/doc/doc?query=Angola&mode=artlist&maxrecords=1&format=json'],
-  ['Tempo (Open-Meteo)','https://geocoding-api.open-meteo.com/v1/search?count=1&name=Luanda'],
+ var T=[['Tempo (Open-Meteo)','https://geocoding-api.open-meteo.com/v1/search?count=1&name=Luanda'],
   ['Câmbios','https://open.er-api.com/v6/latest/USD']];
  for(var k=0;k<T.length;k++){
   try{await gj(T[k][1]);rows.push('✓ '+T[k][0])}
@@ -823,6 +823,50 @@ $('dgb').onclick=async function(){
  }
  o.textContent=rows.join('\n');
 };
+
+/* ---------- modo de voz em ecrã inteiro ---------- */
+var vmTimer=null;
+function vmUpdate(){
+ var cls='idle',txt='';
+ var ms=log.querySelectorAll('.m.a .md'),lastTxt=ms.length?(ms[ms.length-1].innerText||'').trim():'';
+ if(!navigator.onLine||weak){cls='weak';txt='Ligação fraca'}
+ else if(busy){cls='thinking';txt='A pensar…'}
+ else if(speaking()){cls='speaking';txt='A falar…'}
+ else if(on){cls='listening';txt='A ouvir…'}
+ else if(!convo){cls='idle';txt='Toque no microfone para falar'}
+ else{cls='listening';txt='A ouvir…'}
+ $('orb').className='orb '+cls;$('vst').textContent=txt;
+ $('vcap').textContent=(cls==='listening'&&/^«/.test(st.textContent))?st.textContent:((cls==='speaking'||cls==='thinking')?lastTxt.slice(0,240):'');
+ $('vmic').setAttribute('aria-pressed',convo?'false':'true');
+}
+function openVoice(){
+ $('vmo').hidden=false;document.body.style.overflow='hidden';
+ convo=true;idleN=0;$('cv').setAttribute('aria-pressed','true');
+ vmUpdate();clearInterval(vmTimer);vmTimer=setInterval(vmUpdate,250);
+ if(!busy&&!speaking())listenNow();
+}
+function closeVoice(){
+ $('vmo').hidden=true;document.body.style.overflow='';clearInterval(vmTimer);
+ stopConvo('');stopSpeak();$('vsheet').hidden=true;$('vtr').hidden=true;
+}
+$('vx').onclick=closeVoice;
+$('vmic').onclick=function(){if(convo){stopConvo('')}else{convo=true;idleN=0;listenNow()}vmUpdate()};
+$('vf').onsubmit=function(e){e.preventDefault();var v=$('vtxt').value;$('vtxt').value='';if(v.trim())run(v)};
+$('vplus').onclick=function(){$('newc').click()};
+$('vmenu').onclick=function(){
+ var t=$('vtr');$('vsheet').hidden=true;t.hidden=!t.hidden;if(t.hidden)return;
+ t.innerHTML='';
+ Array.prototype.slice.call(log.querySelectorAll('.m')).slice(-10).forEach(function(m){
+  var md=m.querySelector('.md'),d=document.createElement('div');
+  d.className=m.classList.contains('u')?'tu':'ta';d.textContent=((md||m).innerText||'').trim();t.appendChild(d);
+ });
+ t.scrollTop=t.scrollHeight;
+};
+$('vk2').innerHTML=$('vk').innerHTML;$('gv2').innerHTML=$('gv').innerHTML;
+$('vk2').value=cfg.vmode;$('gv2').value=cfg.gvoice;$('vr2').value=cfg.rate;
+function vsave(){cfg.vmode=$('vk2').value;cfg.gvoice=$('gv2').value;cfg.rate=+$('vr2').value;ttsOff=0;$('vk').value=cfg.vmode;$('gv').value=cfg.gvoice;$('vr').value=cfg.rate;put('av3_cfg',cfg)}
+['vk2','gv2','vr2'].forEach(function(i){$(i).onchange=vsave});
+$('vset').onclick=function(){var t=$('vsheet');$('vtr').hidden=true;t.hidden=!t.hidden};
 
 /* ---------- app instalável ---------- */
 var dp=null;
