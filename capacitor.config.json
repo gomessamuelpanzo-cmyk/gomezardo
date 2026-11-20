@@ -1,6 +1,0 @@
-{
-  "appId": "com.gomezardo.app",
-  "appName": "Gomezardo",
-  "webDir": "www",
-  "server": { "androidScheme": "https" }
-}
