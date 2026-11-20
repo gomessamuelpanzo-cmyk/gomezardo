@@ -3,6 +3,7 @@ package com.gomezardo.app;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.speech.RecognizerIntent;
 import androidx.activity.result.ActivityResult;
@@ -31,11 +32,39 @@ public class DirectCallPlugin extends Plugin {
       call.reject("Sem número");
       return;
     }
+    if (!callDeclared()) {
+      try {
+        Intent d = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(number)));
+        d.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getActivity().startActivity(d);
+        JSObject o = new JSObject();
+        o.put("mode", "dial");
+        call.resolve(o);
+      } catch (Exception e) {
+        call.reject(e.getMessage());
+      }
+      return;
+    }
     if (getPermissionState("call") != PermissionState.GRANTED) {
       requestPermissionForAlias("call", call, "callPermsCallback");
       return;
     }
     doDial(call);
+  }
+
+  private boolean callDeclared() {
+    try {
+      String[] req = getContext().getPackageManager()
+        .getPackageInfo(getContext().getPackageName(), PackageManager.GET_PERMISSIONS).requestedPermissions;
+      if (req != null) {
+        for (String p : req) {
+          if ("android.permission.CALL_PHONE".equals(p)) return true;
+        }
+      }
+    } catch (Exception e) {
+      // ignora
+    }
+    return false;
   }
 
   @PermissionCallback

@@ -119,7 +119,7 @@ label{display:block;font-weight:600;margin:12px 0 6px}
 </head>
 <body>
 <main>
-  <header class="hd"><img src="logo.png" alt="Logótipo do Gomezardo" width="52" height="52"><div><h1>Gomezardo</h1><p class="tag">Assistant · criado por Gomes Samuel Panzo</p></div></header>
+  <header class="hd"><img src="logo.png" alt="Logótipo do Gomezardo" width="52" height="52"><div><h1>Gomezardo</h1><p class="tag">Assistant · criado e desenvolvido por Gomes Samuel Panzo</p></div></header>
   <nav class="tabs" role="tablist">
     <button role="tab" data-p="a" aria-selected="true">Assistente</button>
     <button role="tab" data-p="c" aria-selected="false">Contactos</button>
@@ -204,7 +204,8 @@ label{display:block;font-weight:600;margin:12px 0 6px}
       <details class="adv"><summary>Diagnóstico</summary>
       <button class="act" id="dgb" type="button" style="margin-top:8px">Testar ligações</button>
       <div id="dg" class="muted" style="white-space:pre-line"></div></details>
-      <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados aos serviços de IA configurados. As perguntas sobre atualidade também vão a fontes públicas (Wikipédia, notícias GDELT, Open-Meteo, câmbios e, se tiver chave, pesquisa web).</p>
+      <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados aos serviços de IA configurados. Com a pesquisa em tempo real da Gemini, as perguntas sobre atualidade também passam pela Google. Se ligar «Dados extra», perguntas sobre tempo, câmbios e cripto vão a Open-Meteo, ExchangeRate-API e CoinGecko.</p>
+      <p class="muted" style="text-align:center">Gomezardo · criado e desenvolvido por Gomes Samuel Panzo</p>
       <button class="act" id="inst" type="button" hidden>Instalar a app</button>
       <button class="act" id="lockbtn" type="button">Bloquear definições</button>
       <p class="muted" id="ios" hidden>No iPhone: toque em Partilhar e depois em «Adicionar ao ecrã principal».</p>
@@ -247,8 +248,9 @@ var cfg=store('av3_cfg',{prov:'gemini',key:'',model:'gemini-flash-latest',speak:
 var timers=[],pending=null,on=false,rec=null,hist=[],log=$('log'),st=$('state'),busy=false,convo=false,sq=[],sp=false,gen=0,wantListen=false,weak=false,chat=[],vmOn=false;
 
 if(!cfg.prov)cfg.prov='claude';
-var DEFM={gemini:'gemini-flash-latest',groq:'llama-3.3-70b-versatile',openrouter:'meta-llama/llama-3.3-70b-instruct:free',claude:'claude-haiku-5-5'};
+var DEFM={gemini:'gemini-flash-latest',groq:'openai/gpt-oss-120b',openrouter:'meta-llama/llama-3.3-70b-instruct:free',claude:'claude-haiku-5-5'};
 if(!cfg.keys){cfg.keys={};cfg.models={};if(cfg.key)cfg.keys[cfg.prov]=cfg.key;if(cfg.model)cfg.models[cfg.prov]=cfg.model}
+if(cfg.models&&cfg.models.groq==='llama-3.3-70b-versatile')cfg.models.groq=DEFM.groq;
 if(cfg.rate==null)cfg.rate=1;if(cfg.pitch==null)cfg.pitch=1;if(!cfg.lang)cfg.lang='pt-PT';if(!cfg.micmode)cfg.micmode='run';if(cfg.voice==null)cfg.voice='';if(!cfg.vmode)cfg.vmode='gemini';if(!cfg.gvoice)cfg.gvoice='Kore';if(!cfg.tts)cfg.tts='gemini-3.1-flash-tts-preview';
 if(!cfg.vdef){cfg.vmode='device';cfg.vdef=1}
 var unlocked=false,fails=0,until=0,PW=store('av3_pw',null);
@@ -257,6 +259,18 @@ function nat(){return window.Capacitor&&window.Capacitor.Plugins&&window.Capacit
 function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
 var FILL=/\b(por favor|pf|podes|podias|pode|poderia|consegues|gostava de|gostaria de|quero que|quero|preciso de|preciso que|assistente)\b/g;
 function clean(s){return norm(s).replace(FILL,' ').replace(/\s+/g,' ').trim()}
+function creatorKind(t){
+ var n=norm(t);
+ if(/\b(quem\s+es\s+tu|quem\s+es|como\s+te\s+chamas|qual\s+e\s+o\s+teu\s+nome|apresenta\s+te)\b/.test(n))return 'id';
+ var verbo=/\b(criou|criado|criada|criador|criadores|desenvolveu|desenvolvido|desenvolvedor|programou|programado|programador|construiu|construido|inventou|fabricou|idealizou|autor|dono|fundador|pai)\b/.test(n);
+ var alvo=/\b(te|teu|tua|voce|ti|foste|gomezardo)\b/.test(n)||/\b(esta|desta)\s+(app|aplicacao|ia)\b/.test(n)||/\b(este|deste)\s+(assistente|chat)\b/.test(n);
+ var perg=/\b(quem|qual|quais|que\s+empresa|por\s+quem|de\s+quem)\b/.test(n);
+ if(verbo&&alvo&&perg)return 'creator';
+ if(/\bquem\s+(foi\s+que\s+)?te\s+(fez|fizeram|criou|construiu|programou|desenvolveu|inventou)\b/.test(n))return 'creator';
+ if(/\bquem\s+(fez|fizeram)\s+(o\s+)?(gomezardo|esta\s+app|esta\s+aplicacao|este\s+assistente|a\s+ti|voce)\b/.test(n))return 'creator';
+ if(/\bpor\s+tras\s+de\s+(ti|voce)\b/.test(n)||/\bquem\s+esta\s+por\s+tras\b/.test(n))return 'creator';
+ return '';
+}
 function digits(p){return p.replace(/[^\d+]/g,'')}
 function lev(a,b){var d=[],i,j;for(i=0;i<=a.length;i++)d[i]=[i];for(j=1;j<=b.length;j++)d[0][j]=j;
  for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
@@ -308,17 +322,38 @@ function pickVoice(){
  return v.filter(function(x){return /pt[-_]PT/i.test(x.lang)})[0]||v[0]||null;
 }
 function showStop(on){var b=$('stp');if(b)b.hidden=!on}
-var pq=[],pgen=0,asrc=null,actx=null,ttsOff=0;
-function speaking(){return sp||sq.length>0||pq.length>0}
+var pq=[],pgen=0,asrc=null,actx=null,ttsOff=0,dpend=0;
+function speaking(){return sp||pq.length>0}
 function wantSpeak(){return !!cfg.speak||vmOn}
-function premium(){return wantSpeak()&&cfg.vmode==='gemini'&&!!K('gemini')&&Date.now()>ttsOff}
-function pump(){
- if(sp||!sq.length)return;
- try{var u=new SpeechSynthesisUtterance(sq.shift()),g=gen,v=pickVoice();u.lang=(v&&v.lang)||'pt-PT';if(v)u.voice=v;u.rate=cfg.rate||1;u.pitch=cfg.pitch||1;
-  sp=true;showStop(true);
-  var done=function(ev){if(g!==gen)return;if(ev&&ev.error==='not-allowed')st.textContent='Toque no ecrã e tente outra vez para ativar a voz.';sp=false;if(sq.length)pump();else{showStop(false);idle()}};
-  u.onend=done;u.onerror=done;
-  speechSynthesis.speak(u)}catch(e){sp=false;showStop(false)}
+function noVoices(){try{return speechSynthesis.getVoices().length===0}catch(e){return true}}
+function premium(){return wantSpeak()&&(cfg.vmode==='gemini'||noVoices())&&!!K('gemini')&&Date.now()>ttsOff}
+var dq=[],dcur=null,dtimer=null;
+function devSpeak(t){dq.push(t);devNext()}
+function devNext(){
+ if(dcur||!dq.length)return;
+ var t=dq.shift(),g=gen,started=false,u;
+ try{
+  u=new SpeechSynthesisUtterance(t);var v=pickVoice();
+  u.lang=(v&&v.lang)||'pt-PT';if(v)u.voice=v;u.rate=cfg.rate||1;u.pitch=cfg.pitch||1;
+ }catch(e){return}
+ dcur=u;sp=true;showStop(true);
+ var fin=function(ev){
+  if(dcur!==u)return;
+  clearTimeout(dtimer);dcur=null;
+  if(g!==gen)return;
+  if(ev&&ev.error==='not-allowed')st.textContent='Toque no ecrã e tente outra vez para ativar a voz.';
+  if(dq.length)devNext();
+  else if(!pgen){sp=false;showStop(false);idle()}
+ };
+ u.onstart=function(){started=true};
+ u.onend=fin;u.onerror=fin;
+ dtimer=setTimeout(function(){
+  if(dcur!==u)return;
+  if(!started&&noVoices())st.textContent='O telemóvel não tem voz instalada. Use a voz de alta qualidade (Definições) ou instale uma em Texto para voz.';
+  try{speechSynthesis.cancel()}catch(e){}
+  fin();
+ },4000+t.length*90);
+ try{speechSynthesis.speak(u)}catch(e){fin()}
 }
 function deviceSay(t){
  return new Promise(function(res){
@@ -329,8 +364,8 @@ function deviceSay(t){
 }
 async function ttsGemini(t){
  var body={contents:[{parts:[{text:'Diz de forma natural, clara e calorosa, em português: '+t}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:cfg.gvoice||'Kore'}}}}};
- var r=await post('gemini','https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(cfg.tts||'gemini-3.1-flash-tts-preview')+':generateContent',{'x-goog-api-key':K('gemini')},body);
- var d=await withTimeout(r.json(),20000,'o áudio demorou demasiado');
+ var r=await post('gemini','https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(cfg.tts||'gemini-3.1-flash-tts-preview')+':generateContent',{'x-goog-api-key':K('gemini')},body,45000);
+ var d=await withTimeout(r.json(),45000,'o áudio demorou demasiado');
  var ps=(d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts)||[];
  var a=ps.filter(function(p){return p.inlineData&&p.inlineData.data})[0];
  if(!a)throw new Error('sem áudio');
@@ -363,22 +398,38 @@ function splitSeg(t,max){
 }
 function speakChunk(t){
  t=plain(t);if(!wantSpeak()||!t.trim())return;
- if(premium()){splitSeg(t,700).forEach(function(x){pq.push(x)});pumpP();return}
+ if(premium()){splitSeg(t,260).forEach(function(x){pq.push(x)});pumpP();return}
  if(!('speechSynthesis' in window))return;
- splitSeg(t,160).forEach(function(x){sq.push(x)});pump();
+ splitSeg(t,160).forEach(devSpeak);
 }
 async function pumpP(){
  if(pgen||!pq.length)return;
  var g=gen+1;pgen=g;sp=true;showStop(true);
- while(pq.length&&gen+1===g){
-  var t=pq.shift();
-  try{var b=await ttsGemini(t);if(gen+1!==g)break;await playPcm(b)}
-  catch(e){if(gen+1!==g)break;ttsOff=Date.now()+60000;await deviceSay(t)}
+ function ask(){if(!pq.length)return null;var t=pq.shift(),pr=ttsGemini(t);pr.catch(function(){});return{t:t,p:pr}}
+ var cur=ask();
+ while(cur&&gen+1===g){
+  var nxt=ask(),b=null,fail=false,ferr=null;
+  try{b=await cur.p}catch(e){fail=true;ferr=e}
+  if(gen+1!==g)break;
+  if(fail&&noVoices()){
+   await new Promise(function(r){setTimeout(r,ferr&&ferr.http===429?4000:1200)});
+   if(gen+1!==g)break;
+   try{b=await ttsGemini(cur.t);fail=false}
+   catch(e2){st.textContent='A voz de alta qualidade falhou ('+String(e2&&e2.message||'erro').replace(/\.$/,'')+'). Instale uma voz em Definições do Android > Texto para voz.'}
+   if(gen+1!==g)break;
+   if(!fail)await playPcm(b);
+  }else if(fail){ttsOff=Date.now()+60000;await deviceSay(cur.t)}
+  else await playPcm(b);
+  if(gen+1!==g)break;
+  cur=nxt||ask();
  }
  if(pgen===g)pgen=0;
- if(gen+1===g){sp=false;showStop(false);idle()}
+ if(gen+1===g){
+  if(pq.length){pumpP();return}
+  sp=false;showStop(false);idle();
+ }
 }
-function stopSpeak(){gen++;sq=[];pq=[];sp=false;pgen=0;showStop(false);try{if(asrc)asrc.stop()}catch(e){}try{speechSynthesis.cancel()}catch(e){}}
+function stopSpeak(){gen++;pq=[];dq=[];dcur=null;clearTimeout(dtimer);sp=false;pgen=0;dpend=0;showStop(false);try{if(asrc)asrc.stop()}catch(e){}try{speechSynthesis.cancel()}catch(e){}}
 function idle(){if(busy)return;if(convo||wantListen){wantListen=false;setTimeout(listenNow,350)}}
 function say(t,acts,listen){bubble('a',t,acts);if(listen)wantListen=true;speakChunk(t);if(!speaking())idle()}
 function copyText(t){
@@ -390,9 +441,9 @@ function mkStream(q){
  var body=document.createElement('div');body.className='md';d.appendChild(body);
  log.appendChild(d);var spoken=0,txt='';
  function flush(fin){
-  if(!fin&&premium())return;
   var rest=txt.slice(spoken);
   var cut=fin?rest.length:Math.max(rest.lastIndexOf('. '),rest.lastIndexOf('! '),rest.lastIndexOf('? '),rest.lastIndexOf('\n'))+1;
+  if(!fin&&premium()&&cut<110)return;
   if(cut>0){var c=rest.slice(0,cut).trim();spoken+=cut;if(c)speakChunk(c)}
  }
  function host(u){try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return 'fonte'}}
@@ -460,7 +511,7 @@ function K(p){return(cfg.keys&&cfg.keys[p])||''}
 function M(p){return(cfg.models&&cfg.models[p])||DEFM[p]}
 function chain(){var o=[cfg.prov,'gemini','groq','openrouter','claude'],r=[];o.forEach(function(p){if(K(p)&&r.indexOf(p)<0)r.push(p)});return r}
 function herr(p,s){
- var e=new Error(s===400||s===401||s===403?'Chave '+PNAME[p]+' inválida ou sem permissão.':s===404?'Modelo '+PNAME[p]+' não encontrado.':s===429?'Limite gratuito '+PNAME[p]+' atingido.':'Erro '+PNAME[p]+' ('+s+').');
+ var e=new Error(s===401||s===403?'Chave '+PNAME[p]+' inválida ou sem permissão.':s===400?'Pedido recusado por '+PNAME[p]+' (chave ou modelo errado).':s===404?'Modelo '+PNAME[p]+' não encontrado.':s===429?'Limite gratuito '+PNAME[p]+' atingido.':'Erro '+PNAME[p]+' ('+s+').');
  e.retry=(s===500||s===502||s===503);e.http=s;return e;
 }
 var T_CONN=10000,T_IDLE=12000;
@@ -470,8 +521,8 @@ function withTimeout(pr,ms,msg){
   pr.then(function(v){clearTimeout(t);res(v)},function(e){clearTimeout(t);rej(e)});
  });
 }
-async function post(p,url,headers,body){
- var r,ac=new AbortController(),tm=setTimeout(function(){ac.abort()},T_CONN);
+async function post(p,url,headers,body,ms){
+ var r,ac=new AbortController(),tm=setTimeout(function(){ac.abort()},ms||T_CONN);
  try{r=await fetch(url,{method:'POST',headers:Object.assign({'content-type':'application/json'},headers),body:JSON.stringify(body),signal:ac.signal})}
  catch(e){
   clearTimeout(tm);weak=true;
@@ -494,10 +545,41 @@ async function sse(resp,onData){
   }
  }finally{try{rd.cancel()}catch(z){}}
 }
+async function pickModel(p){
+ try{
+  var ids,pref;
+  if(p==='groq'){
+   var d=await gj('https://api.groq.com/openai/v1/models',{headers:{Authorization:'Bearer '+K('groq')}});
+   ids=(d.data||[]).filter(function(m){return m.active!==false}).map(function(m){return m.id}).filter(function(x){return !/whisper|tts|guard|safeguard|orpheus|embed|playai/i.test(x)});
+   pref=[/gpt-oss-120b/,/gpt-oss-20b/,/qwen/,/llama/];
+  }else if(p==='openrouter'){
+   var d2=await gj('https://openrouter.ai/api/v1/models');
+   ids=(d2.data||[]).map(function(m){return m.id}).filter(function(x){return /:free$/.test(x)});
+   pref=[/gpt-oss-120b/,/llama-3\.3-70b/,/qwen3/,/gemma/,/llama/];
+  }else return null;
+  for(var k=0;k<pref.length;k++){var f=ids.filter(function(x){return pref[k].test(x)})[0];if(f)return f}
+  return ids[0]||null;
+ }catch(e){return null}
+}
+function shape(p,body,o){
+ delete body.reasoning_effort;delete body.response_format;
+ if(/gpt-oss/.test(body.model))body.reasoning_effort='low';
+ else if(o.json&&p==='groq')body.response_format={type:'json_object'};
+}
 async function oai(p,url,sys,msgs,o){
  var body={model:M(p),stream:true,max_tokens:2048,messages:[{role:'system',content:sys}].concat(msgs)};
- if(o.json&&p==='groq')body.response_format={type:'json_object'};
- var r=await post(p,url,{Authorization:'Bearer '+K(p)},body),full='';
+ shape(p,body,o);
+ var r,hd={Authorization:'Bearer '+K(p)};
+ try{r=await post(p,url,hd,body)}
+ catch(e){
+  if(e.http!==404&&e.http!==400)throw e;
+  var m=await pickModel(p);
+  if(!m||m===body.model)throw e;
+  cfg.models=cfg.models||{};cfg.models[p]=m;put('av3_cfg',cfg);
+  body.model=m;shape(p,body,o);
+  r=await post(p,url,hd,body);
+ }
+ var full='';
  await sse(r,function(d){var c=d.choices&&d.choices[0],t=c&&c.delta&&c.delta.content;if(t){full+=t;if(o.onText)o.onText(full)}});
  return{text:full,meta:null};
 }
@@ -544,7 +626,7 @@ async function llm(sys,msgs,o){
  throw err;
 }
 async function ai(text,ui){
- var sys='O teu nome é Gomezardo. És um assistente de IA por voz e chat, em português europeu, que responde diretamente a qualquer pergunta, como um chat. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "local", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, musica, rota, abrir, temporizador, nota ou conversa. Usa "conversa" para praticamente tudo: perguntas de conhecimento, pessoas, países, cargos, história, ciência, explicações, cálculos, traduções, conselhos, ideias, textos e conversa. Nesse caso responde diretamente em "resposta", de forma clara e útil: com a extensão que a pergunta merece: curta se for simples, mais completa e detalhada se for complexa ou se pedirem explicações, histórias ou textos, sempre com frases naturais para serem ditas em voz alta. Ajudas com qualquer assunto. Falas como uma IA conversacional normal, simpática e natural, em linguagem simples, sem jargão técnico nem código, a menos que o utilizador peça. Formata com Markdown simples: começa com uma frase direta a negrito (**...**) e, quando ajudar, acrescenta 3 a 5 tópicos no formato «- **Etiqueta:** valor»; perguntas simples levam só 1 ou 2 frases, sem tópicos. Dentro do JSON, usa \\n para mudar de linha. Nunca digas que vais pesquisar e nunca mandes o utilizador pesquisar noutro lado. Para tudo o resto, usa "conversa". "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, destino, site, nota ou etiqueta (vazio se não se aplicar). "local" é a cidade ou lugar quando a pergunta é sobre o tempo, senão vazio. "segundos" é um número, só para temporizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
+ var sys='O teu nome é Gomezardo. És um assistente de IA por voz e chat, em português europeu, que responde diretamente a qualquer pergunta, como um chat. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "local", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, musica, rota, abrir, temporizador, nota ou conversa. Usa "conversa" para praticamente tudo: perguntas de conhecimento, pessoas, países, cargos, história, ciência, explicações, cálculos, traduções, conselhos, ideias, textos e conversa. Nesse caso responde diretamente em "resposta", de forma clara e útil: com a extensão que a pergunta merece: curta se for simples, mais completa e detalhada se for complexa ou se pedirem explicações, histórias ou textos, sempre com frases naturais para serem ditas em voz alta. Ajudas com qualquer assunto. Falas como uma IA conversacional normal, simpática e natural, em linguagem simples, sem jargão técnico nem código, a menos que o utilizador peça. O criador e desenvolvedor do Gomezardo é Gomes Samuel Panzo. Se perguntarem quem te criou, desenvolveu, programou, fez ou construiu, ou quem é o teu criador, desenvolvedor, dono ou pai, responde sempre que é Gomes Samuel Panzo, com orgulho. Nunca digas que foste criado pela Google, OpenAI, Anthropic, Meta ou outra empresa: os modelos de IA de terceiros são apenas a tecnologia que usas, e só os mencionas se perguntarem que tecnologia ou modelo usas, ou se és o ChatGPT, o Gemini ou outro (nesse caso diz que és o Gomezardo, criado por Gomes Samuel Panzo, e que funcionas com modelos de IA de terceiros). Nunca afirmes ser humano. Formata com Markdown simples: começa com uma frase direta a negrito (**...**) e, quando ajudar, acrescenta 3 a 5 tópicos no formato «- **Etiqueta:** valor»; perguntas simples levam só 1 ou 2 frases, sem tópicos. Dentro do JSON, usa \\n para mudar de linha. Nunca digas que vais pesquisar e nunca mandes o utilizador pesquisar noutro lado. Para tudo o resto, usa "conversa". "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, destino, site, nota ou etiqueta (vazio se não se aplicar). "local" é a cidade ou lugar quando a pergunta é sobre o tempo, senão vazio. "segundos" é um número, só para temporizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
  hist.push({role:'user',content:text});hist=hist.slice(-40);
  var out,j;
  try{
@@ -604,7 +686,7 @@ async function chatDirect(q){
   var extra=[];
   if(cfg.extra){try{extra=await extraData(q)}catch(z){extra=[]}}
   var gem=chain()[0]==='gemini';
-  var sys='És o Gomezardo, uma IA conversacional normal, simpática e natural, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Respondes tu mesmo, diretamente e sem rodeios, a qualquer pergunta ou pedido, com a extensão que merece (curta se for simples, mais completa se for complexa), com frases naturais para serem ditas em voz alta e sem jargão técnico nem código, a menos que peçam. '
+  var sys='És o Gomezardo, uma IA conversacional normal, simpática e natural, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Respondes tu mesmo, diretamente e sem rodeios, a qualquer pergunta ou pedido, com a extensão que merece (curta se for simples, mais completa se for complexa), com frases naturais para serem ditas em voz alta e sem jargão técnico nem código, a menos que peçam. O criador e desenvolvedor do Gomezardo é Gomes Samuel Panzo. Se perguntarem quem te criou, desenvolveu, programou, fez ou construiu, ou quem é o teu criador, desenvolvedor, dono ou pai, responde sempre que é Gomes Samuel Panzo, com orgulho. Nunca digas que foste criado pela Google, OpenAI, Anthropic, Meta ou outra empresa: os modelos de IA de terceiros são apenas a tecnologia que usas, e só os mencionas se perguntarem que tecnologia ou modelo usas, ou se és o ChatGPT, o Gemini ou outro (nesse caso diz que és o Gomezardo, criado por Gomes Samuel Panzo, e que funcionas com modelos de IA de terceiros). Nunca afirmes ser humano. '
    +(gem?'Tens a pesquisa em tempo real da Google: usa-a quando precisares de factos atuais (cargos, notícias, resultados, preços, tempo, datas recentes) e responde com os dados mais recentes, sem dizeres que vais pesquisar. ':'O teu conhecimento pode estar desatualizado: em factos que mudam com o tempo, diz «segundo o que sei». ')
    +'Formata com Markdown simples: começa com uma frase direta a negrito (**...**) e, quando ajudar, acrescenta 3 a 5 tópicos no formato «- **Etiqueta:** valor»; perguntas simples levam só 1 ou 2 frases, sem tópicos. Nunca mandes o utilizador pesquisar noutro lado.'
    +(extra.length?'\n\nDADOS EM TEMPO REAL (usa-os e diz de onde vêm; códigos do tempo WMO: 0 limpo, 1 a 3 nublado, 45 e 48 nevoeiro, 51 a 67 chuva, 71 a 77 neve, 80 a 82 aguaceiros, 95 a 99 trovoada):\n'+extra.map(function(s){return '- '+s.name+': '+s.text}).join('\n'):'');
@@ -628,7 +710,7 @@ async function chatDirect(q){
 /* ---------- execução ---------- */
 function doContact(a,c,body){var n=digits(c.phone);
  if(a==='ligar'){var N=nat();
-  if(N){say('A ligar para '+c.name+'.');N.dial({number:n}).catch(function(e){say('Não consegui ligar'+(e&&e.message?': '+e.message:'')+'.',[{label:'Abrir marcador',href:'tel:'+n,p:true}])});return}
+  if(N){say('A ligar para '+c.name+'.');N.dial({number:n}).then(function(r){if(r&&r.mode==='dial')say('Marcador aberto. Toque em Ligar para chamar '+c.name+'.')}).catch(function(e){say('Não consegui ligar'+(e&&e.message?': '+e.message:'')+'.',[{label:'Abrir marcador',href:'tel:'+n,p:true}])});return}
   say('A ligar para '+c.name+'.',[{label:'Ligar agora',href:'tel:'+n,p:true}]);launch('tel:'+n);return}
  if(a==='sms')return ask('Mensagem para '+c.name+(body?': «'+body+'»':'')+'?','sms:'+n+(body?'?body='+encodeURIComponent(body):''),'Abrir SMS');
  return ask('Abrir o WhatsApp com '+c.name+'?','https://wa.me/'+n.replace('+',''),'Abrir WhatsApp');
@@ -666,6 +748,15 @@ async function runInner(alts){
   pending=null}
  if(!chain().length){say('Falta a chave da API para eu perceber os pedidos.',[{label:'Abrir definições',fn:function(){tab('s')},p:true}]);return}
  busy=true;st.textContent='A pensar…';
+ var ck=creatorKind(first);
+ if(ck){
+  var ct=ck==='id'?'**Sou o Gomezardo, um assistente de IA criado e desenvolvido por Gomes Samuel Panzo.**\nPodes falar ou escrever comigo à vontade: respondo a perguntas, converso e ajudo-te em tudo o que precisares.':'**Fui criado e desenvolvido por Gomes Samuel Panzo.**\nSou o Gomezardo, o assistente de IA dele, e estou aqui para conversar e ajudar em tudo o que precisares.';
+  chat.push({role:'user',content:first},{role:'assistant',content:ct});chat=chat.slice(-40);
+  var S0=mkStream(first);S0.update(ct);S0.finish(ct);S0.tools();
+  busy=false;st.textContent='';
+  if(!speaking())idle();
+  return;
+ }
  if(!isCommand(first)){
   try{await withTimeout(chatDirect(first),60000,'demorou demasiado')}
   catch(e){say('Não consegui responder a tempo ('+e.message+').',[{label:'Tentar de novo',fn:function(){run(first)},p:true}])}
@@ -698,7 +789,7 @@ function listenNow(){
  if(nat()){
   on=true;mic.classList.add('on');st.textContent='A ouvir…';
   nat().listen().then(function(r){micOff();st.textContent='';idleN=0;if(cfg.micmode==='type'&&!convo){$('txt').value=r.results[0];sync();return}run(r.results)})
-  .catch(function(){micOff();st.textContent='';if(convo){if(++idleN>=3)stopConvo('Modo conversa desligado por inatividade.');else setTimeout(listenNow,400)}});
+  .catch(function(){micOff();st.textContent='';if(convo){idleN++;if(!vmOn&&idleN>=3)stopConvo('Modo conversa desligado por inatividade.');else setTimeout(listenNow,idleN>8?1500:400)}});
   return}
  if(!rec)return;
  try{rec.start()}catch(e){}
@@ -716,7 +807,7 @@ if(!nat()){
   rec.onstart=function(){on=true;mic.classList.add('on');st.textContent='A ouvir…'};
   rec.onend=function(){
    micOff();if(st.textContent==='A ouvir…')st.textContent='';
-   if(convo&&!busy&&!speaking()){if(++idleN>=3)stopConvo('Modo conversa desligado por inatividade.');else setTimeout(listenNow,350)}
+   if(convo&&!busy&&!speaking()){idleN++;if(!vmOn&&idleN>=3)stopConvo('Modo conversa desligado por inatividade.');else setTimeout(listenNow,idleN>8?1500:350)}
   };
   rec.onresult=function(e){var r=e.results[e.results.length-1];
    if(!r.isFinal){st.textContent='«'+r[0].transcript+'»';return}
@@ -753,11 +844,11 @@ var PROVS=['gemini','groq','openrouter','claude'];
  PROVS.forEach(function(p){
   var o=document.createElement('option');o.value=p;o.textContent=PNAME[p];sel.appendChild(o);
   var l=document.createElement('label');l.textContent='Chave '+PNAME[p];l.htmlFor='k-'+p;box.appendChild(l);
-  var k=document.createElement('input');k.type='password';k.id='k-'+p;k.autocomplete='off';k.placeholder='Cole a chave (opcional)';k.value=K(p);box.appendChild(k);
+  var k=document.createElement('input');k.type='text';k.style.webkitTextSecurity='disc';k.setAttribute('autocapitalize','off');k.spellcheck=false;k.id='k-'+p;k.autocomplete='off';k.placeholder='Cole a chave (opcional)';k.value=K(p);box.appendChild(k);
   var m=document.createElement('input');m.type='text';m.id='m-'+p;m.setAttribute('aria-label','Modelo '+PNAME[p]);m.value=M(p);box.appendChild(m);
  });
  var l=document.createElement('label');l.textContent='Pesquisa web (Tavily, opcional)';l.htmlFor='k-tavily';box.appendChild(l);
- var k=document.createElement('input');k.type='password';k.id='k-tavily';k.autocomplete='off';k.placeholder='Chave Tavily (opcional)';k.value=K('tavily');box.appendChild(k);
+ var k=document.createElement('input');k.type='text';k.style.webkitTextSecurity='disc';k.setAttribute('autocapitalize','off');k.spellcheck=false;k.id='k-tavily';k.autocomplete='off';k.placeholder='Chave Tavily (opcional)';k.value=K('tavily');box.appendChild(k);
 })();
 $('prov').value=cfg.prov;$('sp').checked=cfg.speak;$('ss').checked=!!cfg.showsrc;$('sx').checked=!!cfg.extra;
 $('sv').onclick=function(){
@@ -843,7 +934,11 @@ $('dgb').onclick=async function(){
   catch(e){rows.push('✗ '+PNAME[ch[i]]+': '+(e&&e.message?e.message:'erro'))}
  }
  if(K('gemini')){try{await withTimeout(ttsGemini('Teste'),25000,'sem resposta');rows.push('✓ Voz de alta qualidade (Gemini)')}catch(e){rows.push('✗ Voz de alta qualidade: '+(e&&e.message?e.message:'erro')+' (usa a voz do telemóvel)')}}
- rows.push(('speechSynthesis' in window)?'✓ Voz do telemóvel: '+speechSynthesis.getVoices().length+' vozes':'✗ Este navegador não tem voz de saída');
+ var nv=0;
+ if('speechSynthesis' in window){
+  for(var w=0;w<8&&!(nv=speechSynthesis.getVoices().length);w++)await new Promise(function(r){setTimeout(r,250)});
+  rows.push(nv?'✓ Voz do telemóvel: '+nv+' vozes':'✗ Voz do telemóvel: nenhuma voz instalada (a app usa a voz de alta qualidade; ou instale uma em Definições do Android > Texto para voz)');
+ }else rows.push('✗ Este navegador não tem voz de saída');
  rows.push((SR||nat())?'✓ Reconhecimento de voz disponível':'✗ Este navegador não reconhece voz (use o Chrome)');
  try{var pm=await navigator.permissions.query({name:'microphone'});rows.push((pm.state==='granted'?'✓ Microfone: permitido':pm.state==='denied'?'✗ Microfone: bloqueado (permita no cadeado junto ao endereço)':'• Microfone: ainda não permitido'))}catch(e){rows.push('• Microfone: não foi possível verificar')}
  var T=[['Tempo (Open-Meteo)','https://geocoding-api.open-meteo.com/v1/search?count=1&name=Luanda'],
