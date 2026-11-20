@@ -15,8 +15,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: bash build-apk.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: gomezardo-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: gomezardo-apks
+          path: apks/*.apk
+          retention-days: 14
