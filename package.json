@@ -1,10 +1,20 @@
 {
-  "name": "gomezardo",
+  "name": "gomezardo-assistant",
   "version": "1.0.0",
   "private": true,
+  "description": "Assistente Gomezardo em português - aplicação web instalável e base Android Capacitor",
+  "scripts": {
+    "start": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "android:sync": "npm run build && cap sync android",
+    "android:open": "cap open android"
+  },
   "dependencies": {
-    "@capacitor/android": "^6.2.0",
-    "@capacitor/cli": "^6.2.0",
-    "@capacitor/core": "^6.2.0"
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "vite": "^6.4.1"
   }
 }

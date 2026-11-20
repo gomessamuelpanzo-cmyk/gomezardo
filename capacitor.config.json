@@ -1,0 +1,7 @@
+{
+  "appId": "com.gomezardo.app",
+  "appName": "Gomezardo",
+  "webDir": "dist",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}

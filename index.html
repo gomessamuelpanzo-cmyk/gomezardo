@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Gomezardo</title>
+<style>
+:root{--bg:#eaf1ef;--card:#fff;--ink:#0d1b2a;--mute:#5c6f6e;--line:#d3e0dd;--acc:#0f8b8d;--sig:#ff6b4a;--soft:#dcebe9;--onacc:#fff}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1a1f;--card:#12292f;--ink:#e8f3f1;--mute:#8eaaa8;--line:#1f3d44;--acc:#3fd0c9;--sig:#ff8366;--soft:#183840;--onacc:#06242a}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.bar{display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:30px;padding:6px 8px}
+.bar input{border:0;background:none;padding:10px 6px;border-radius:0;min-width:0;flex:1}
+.bar input:focus-visible{outline:none}
+.bar button{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:none;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.bar button svg{width:22px;height:22px}
+#plus{background:var(--soft)}
+#mic.on{background:var(--sig);color:#fff;box-shadow:0 0 0 0 var(--sig);animation:ring 1.1s infinite}
+@keyframes ring{to{box-shadow:0 0 0 18px transparent}}
+#cv{background:#f472b6;color:#fff}
+#cv[aria-pressed=true]{box-shadow:0 0 0 0 #f472b6;animation:ring2 1.4s infinite}
+@keyframes ring2{to{box-shadow:0 0 0 16px transparent}}
+#snd{background:var(--acc);color:var(--onacc)}
+.pm{display:flex;gap:8px;flex-wrap:wrap}
+.rec{justify-content:space-between}
+#rcx{background:var(--soft)}
+#rsd{background:var(--acc);color:var(--onacc)}
+.rmid{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700}
+.rdot{width:10px;height:10px;border-radius:50%;background:#ef4444;animation:blink 1s infinite}
+.rwave{display:flex;align-items:center;gap:3px;height:28px}
+.rwave i{display:block;width:3px;height:8px;border-radius:2px;background:var(--sig);animation:wv .9s ease-in-out infinite}
+.rwave i:nth-child(2){animation-delay:.1s}.rwave i:nth-child(3){animation-delay:.2s}.rwave i:nth-child(4){animation-delay:.3s}.rwave i:nth-child(5){animation-delay:.4s}.rwave i:nth-child(6){animation-delay:.5s}.rwave i:nth-child(7){animation-delay:.6s}
+@keyframes wv{50%{height:26px}}@keyframes blink{50%{opacity:.25}}
+.vm-top{align-items:center}
+.vm-logo{width:60px;height:60px;border-radius:16px;object-fit:cover;border:1px solid #333}
+@media(prefers-reduced-motion:reduce){.rdot,.rwave i{animation:none}}
+details.adv{border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+details.adv summary{cursor:pointer;font-weight:700}
+.vm{position:fixed;inset:0;z-index:60;background:#000;color:#fff;display:flex;flex-direction:column;padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom))}
+.vm-top{display:flex;justify-content:space-between}
+.vm-ic{flex:none;width:50px;height:50px;border-radius:50%;border:0;background:#262626;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.vm-ic.sm{width:42px;height:42px;background:none}
+.vm-center{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px}
+.orb{width:min(62vw,280px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 14%,#f9a8d4 0%,#fbc9e1 20%,#fde6f1 46%,#fff4f9 78%);box-shadow:0 0 70px rgba(244,114,182,.28)}
+.orb.idle{animation:breathe 4s ease-in-out infinite}
+.orb.listening{animation:listen 1.5s ease-in-out infinite}
+.orb.thinking{animation:think 1.2s ease-in-out infinite}
+.orb.speaking{animation:talk .6s ease-in-out infinite alternate}
+.orb.weak{opacity:.6}
+@keyframes breathe{50%{transform:scale(1.04)}}
+@keyframes listen{50%{transform:scale(1.08);box-shadow:0 0 90px rgba(244,114,182,.5)}}
+@keyframes think{0%,100%{transform:scale(.95);opacity:.8}50%{transform:scale(1.02);opacity:1}}
+@keyframes talk{to{transform:scale(1.13);box-shadow:0 0 100px rgba(244,114,182,.55)}}
+.vm-st{font-weight:800;font-size:1.15rem;text-shadow:0 0 6px #000,0 0 2px #000}
+.vm-cap{max-width:86%;text-align:center;color:#d4d4d8;font-size:.95rem;line-height:1.4;max-height:6.6em;overflow:hidden}
+.vm-bar{display:flex;align-items:center;gap:8px}
+.vm-bar .pill{flex:1;min-width:0;display:flex;align-items:center;gap:4px;background:#262626;border-radius:30px;padding:4px 14px 4px 4px}
+.vm-bar input{flex:1;min-width:0;border:0;background:none;color:#fff;font:inherit;font-weight:700;padding:10px 4px;border-radius:0}
+.vm-bar input::placeholder{color:#fff;opacity:.92}
+.vm-bar input:focus-visible{outline:none}
+#vx{background:#fff;color:#000;width:54px;height:54px}
+#vmic[aria-pressed=true]{background:#7f1d1d}
+.vm-tr{background:#171717;border-radius:18px;padding:14px;margin-bottom:10px;max-height:38vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.vm-tr .tu{align-self:flex-end;background:#0f8b8d;border-radius:14px;padding:8px 12px;max-width:85%}
+.vm-tr .ta{background:#262626;border-radius:14px;padding:8px 12px;max-width:90%}
+.vm-tr label{display:flex;flex-direction:column;gap:6px;font-weight:600}
+.vm-tr select{padding:10px;border-radius:12px;border:0;background:#262626;color:#fff;font:inherit}
+@media(prefers-reduced-motion:reduce){.orb{animation:none!important}}
+@media(prefers-reduced-motion:reduce){#mic.on,#cv[aria-pressed=true]{animation:none}}
+.m .md p{margin:0 0 .55em}.m .md p:last-child{margin-bottom:0}
+.m .md ul,.m .md ol{margin:.2em 0 .55em;padding-left:1.25em}.m .md li{margin:.2em 0}
+.m .md code{background:var(--bg);padding:1px 5px;border-radius:6px}
+.tools{display:flex;gap:2px;margin-top:8px;flex-wrap:wrap}
+.tb{border:0;background:none;color:var(--mute);font-size:1.05rem;padding:6px 9px;border-radius:10px;cursor:pointer}
+.tb.on{color:var(--acc);background:var(--card)}
+.srcw{margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:5px 12px;font:inherit;font-size:.8rem;cursor:pointer}
+.srcl{margin-top:8px;display:flex;flex-direction:column;gap:4px;font-size:.85rem}
+.srcl a{color:var(--acc);overflow-wrap:anywhere}.srch{font-weight:700;color:var(--mute)}
+.mm{display:flex;flex-direction:column;gap:6px;margin-top:6px;align-items:flex-start}
+.hd{display:flex;align-items:center;gap:12px}
+.hd img{border-radius:14px;flex:none;border:1px solid var(--line)}
+.tag{margin:2px 0 0;color:var(--mute);font-size:.78rem}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:flex;justify-content:center}
+main{width:100%;max-width:600px;height:100dvh;display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));gap:10px}
+h1{margin:0;font-size:1.45rem;font-weight:800}
+.tabs{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:14px}
+.tabs button{flex:1;border:0;background:none;color:var(--mute);font:inherit;font-weight:600;padding:9px 2px;border-radius:10px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--card);color:var(--ink)}
+section{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+section[hidden]{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+#log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.m{padding:10px 13px;border-radius:16px;max-width:88%;line-height:1.4;overflow-wrap:anywhere}
+.m.u{align-self:flex-end;background:var(--acc);color:var(--onacc);border-bottom-right-radius:4px}
+.m.a{align-self:flex-start;background:var(--soft);border-bottom-left-radius:4px}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.act{border:1px solid var(--line);border-radius:10px;padding:9px 13px;font:inherit;font-weight:600;cursor:pointer;background:var(--card);color:var(--ink);text-decoration:none}
+.act.p{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+#timers{display:flex;flex-wrap:wrap;gap:6px}#timers:empty{display:none}
+.tm{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:6px 12px;font:inherit;font-size:.85rem;cursor:pointer}
+#state{min-height:1.3em;font-size:.9rem;color:var(--mute);text-align:center}
+.dock{display:flex;gap:8px;align-items:center}
+input{flex:1;min-width:0;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+:focus-visible{outline:3px solid var(--sig);outline-offset:2px}
+.list{overflow-y:auto}
+.it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.it small{color:var(--mute);display:block}
+.it button{border:0;background:none;color:var(--mute);font-size:1.1rem;cursor:pointer}
+.muted{color:var(--mute);font-size:.9rem;line-height:1.5;margin:6px 0}
+label{display:block;font-weight:600;margin:12px 0 6px}
+.stack{display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+</style>
+<style>
+/* Avatar holográfico do Gomezardo */
+.vm-center{gap:14px}
+.orb{width:min(76vw,360px);height:min(56vh,520px);aspect-ratio:auto;border-radius:0;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;overflow:visible}
+.orb img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 18px rgba(0,190,255,.55));animation:avatarFloat 4s ease-in-out infinite}
+.orb.listening img{filter:drop-shadow(0 0 25px rgba(40,220,255,.9))}
+.orb.speaking img{animation:avatarTalk .45s ease-in-out infinite alternate}
+@keyframes avatarFloat{50%{transform:translateY(-7px)}}
+@keyframes avatarTalk{to{transform:translateY(-3px) scale(1.015)}}
+.vm{background:radial-gradient(ellipse at 50% 42%,#102d53 0%,#020817 70%)}
+@media(max-height:650px){.orb{height:42vh}}
+</style>
+</head>
+<body>
+<main>
+  <header class="hd"><img src="logo.png" alt="Logótipo do Gomezardo" width="52" height="52"><div><h1>Gomezardo</h1><p class="tag">Assistant · criado e desenvolvido por Gomes Samuel Panzo</p></div></header>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-p="a" aria-selected="true">Assistente</button>
+    <button role="tab" data-p="c" aria-selected="false">Contactos</button>
+    <button role="tab" data-p="n" aria-selected="false">Notas</button>
+    <button role="tab" data-p="s" aria-selected="false">Definições</button>
+  </nav>
+
+  <section id="p-a">
+    <div id="timers"></div>
+    <div id="log" class="card" aria-live="polite"></div>
+    <div id="state" role="status"></div>
+    <button type="button" class="act" id="stp" hidden style="align-self:center">■ Parar de falar</button>
+    <div id="pm" class="pm" hidden><button type="button" class="act" id="newc">Nova conversa</button></div>
+    <form id="f" class="bar">
+      <button type="button" id="plus" aria-label="Mais opções"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <input id="txt" placeholder="Pergunte ao Gomezardo…" autocomplete="off" aria-label="Pedido">
+      <button type="button" id="mic" aria-label="Falar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button type="button" id="cv" aria-pressed="false" aria-label="Conversa por voz"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="10" width="2.4" height="4" rx="1.2"/><rect x="6.5" y="6" width="2.4" height="12" rx="1.2"/><rect x="11" y="3" width="2.4" height="18" rx="1.2"/><rect x="15.5" y="7" width="2.4" height="10" rx="1.2"/><rect x="20" y="10" width="2.4" height="4" rx="1.2"/></svg></button>
+      <button type="submit" id="snd" aria-label="Enviar" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+    </form>
+    <div id="rb" class="bar rec" hidden>
+      <button type="button" id="rcx" aria-label="Cancelar gravação"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <div class="rmid"><span class="rdot"></span><span class="rwave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span id="rtm">0:00</span></div>
+      <button type="button" id="rsd" aria-label="Enviar gravação"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+    </div>
+  </section>
+
+  <section id="p-c" hidden>
+    <form id="cf" class="dock card">
+      <input id="cn" placeholder="Nome" required aria-label="Nome">
+      <input id="cp" type="tel" placeholder="Número" required aria-label="Número">
+      <button type="submit" class="act p">Guardar</button>
+    </form>
+    <div class="card list" id="cl"></div>
+    <p class="muted">Use o formato internacional (+indicativo do país). Os números ficam só neste dispositivo.</p>
+  </section>
+
+  <section id="p-n" hidden>
+    <form id="nf" class="dock card">
+      <input id="nt" placeholder="Nova nota" required aria-label="Nota">
+      <button type="button" class="act" id="ntm" aria-label="Ditar nota">🎙</button>
+      <button type="submit" class="act p">Guardar</button>
+    </form>
+    <div class="card list" id="nl"></div>
+  </section>
+
+  <section id="p-s" hidden>
+    <div class="card stack" id="lk" hidden>
+      <label id="lkt" for="pw" style="margin-top:0"></label>
+      <input id="pw" type="password" autocomplete="off" placeholder="Senha">
+      <input id="pw2" type="password" autocomplete="off" placeholder="Repita a senha" hidden>
+      <button class="act p" id="lkb" type="button"></button>
+      <p class="muted" id="lkm" role="alert"></p>
+      <button class="act" id="rst" type="button" hidden>Esqueci a senha (apagar tudo)</button>
+    </div>
+    <div class="card stack" id="sc" hidden>
+      <details class="adv"><summary>Avançado: serviços de IA e chaves</summary>
+      <label for="prov" style="margin-top:0">Serviço principal de IA</label>
+      <select id="prov" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"></select>
+      <div id="prv" class="stack"></div>
+      <p class="muted">Chaves gratuitas: aistudio.google.com/apikey (Gemini), console.groq.com/keys (Groq), openrouter.ai/keys (OpenRouter), tavily.com (pesquisa web). Se um serviço falhar ou atingir o limite, o Gomezardo passa sozinho ao seguinte que tiver chave.</p>
+      <label class="dock" style="font-weight:400"><input type="checkbox" id="ss" style="flex:none"> Mostrar as fontes das respostas</label>
+      <label class="dock" style="font-weight:400"><input type="checkbox" id="sx" style="flex:none"> Dados extra (tempo, câmbios, cripto e Tavily)</label>
+      </details>
+      <label for="vk">Tipo de voz do Gomezardo</label>
+      <select id="vk" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="gemini">Voz de alta qualidade (Gemini)</option><option value="device">Voz do telemóvel</option></select>
+      <label for="gv">Personagem da voz de alta qualidade</label>
+      <select id="gv" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="Kore">Kore (firme)</option><option value="Puck">Puck (animada)</option><option value="Charon">Charon (grave, informativa)</option><option value="Fenrir">Fenrir (entusiasta)</option><option value="Aoede">Aoede (leve)</option><option value="Zephyr">Zephyr (brilhante)</option><option value="Orus">Orus (firme)</option><option value="Leda">Leda (jovem)</option></select>
+      <label for="vs">Voz do telemóvel (alternativa)</label>
+      <select id="vs" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"></select>
+      <label for="vr">Velocidade da voz</label>
+      <input id="vr" type="range" min="0.6" max="1.6" step="0.1" style="padding:0">
+      <label for="vp">Tom da voz</label>
+      <input id="vp" type="range" min="0.6" max="1.6" step="0.1" style="padding:0">
+      <button class="act" id="vt" type="button">Ouvir exemplo</button>
+      <label for="vl">Idioma do microfone</label>
+      <select id="vl" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="pt-PT">Português (Portugal)</option><option value="pt-BR">Português (Brasil)</option><option value="en-US">Inglês</option><option value="fr-FR">Francês</option><option value="es-ES">Espanhol</option></select>
+      <label for="vm">Quando falo no microfone</label>
+      <select id="vm" style="padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit"><option value="run">Executar logo o pedido</option><option value="type">Escrever na caixa para eu rever</option></select>
+      <label class="dock" style="font-weight:400;margin:12px 0 0"><input type="checkbox" id="sp" style="flex:none"> Responder em voz</label>
+      <button class="act p" id="sv" type="button" style="margin-top:12px">Guardar definições</button>
+      <details class="adv"><summary>Diagnóstico</summary>
+      <button class="act" id="dgb" type="button" style="margin-top:8px">Testar ligações</button>
+      <div id="dg" class="muted" style="white-space:pre-line"></div></details>
+      <p class="muted">A chave fica guardada apenas neste dispositivo. Os pedidos e os nomes dos contactos (nunca os números) são enviados aos serviços de IA configurados. Com a pesquisa em tempo real da Gemini, as perguntas sobre atualidade também passam pela Google. Se ligar «Dados extra», perguntas sobre tempo, câmbios e cripto vão a Open-Meteo, ExchangeRate-API e CoinGecko.</p>
+      <p class="muted" style="text-align:center">Gomezardo · criado e desenvolvido por Gomes Samuel Panzo</p>
+      <button class="act" id="inst" type="button" hidden>Instalar a app</button>
+      <button class="act" id="lockbtn" type="button">Bloquear definições</button>
+      <p class="muted" id="ios" hidden>No iPhone: toque em Partilhar e depois em «Adicionar ao ecrã principal».</p>
+    </div>
+  </section>
+</main>
+
+<div id="vmo" class="vm" hidden role="dialog" aria-label="Conversa por voz">
+  <div class="vm-top">
+    <button type="button" class="vm-ic" id="vmenu" aria-label="Ver a conversa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 8h12M4 16h16"/></svg></button>
+    <img class="vm-logo" src="logo.png" alt="Gomezardo">
+    <button type="button" class="vm-ic" id="vset" aria-label="Definições de voz"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2.2"/><circle cx="9" cy="16" r="2.2"/></svg></button>
+  </div>
+  <div class="vm-center">
+    <div id="orb" class="orb idle"><img src="avatar-gomezardo.png" alt="Avatar holográfico de corpo inteiro do Gomezardo"></div>
+    <div id="vst" class="vm-st">A ouvir…</div>
+    <div id="vcap" class="vm-cap"></div>
+  </div>
+  <div id="vtr" class="vm-tr" hidden></div>
+  <div id="vsheet" class="vm-tr" hidden>
+    <label>Voz do Gomezardo<select id="vk2"></select></label>
+    <label>Personagem<select id="gv2"></select></label>
+    <label>Velocidade<input id="vr2" type="range" min="0.6" max="1.6" step="0.1"></label>
+  </div>
+  <form id="vf" class="vm-bar">
+    <div class="pill">
+      <button type="button" class="vm-ic sm" id="vplus" aria-label="Nova conversa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <input id="vtxt" placeholder="Perguntar ao Gomezardo" autocomplete="off" aria-label="Escrever ao Gomezardo">
+    </div>
+    <button type="button" class="vm-ic" id="vmic" aria-pressed="false" aria-label="Ligar ou desligar o microfone"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+    <button type="button" class="vm-ic" id="vx" aria-label="Terminar conversa por voz"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </form>
+</div>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+function store(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function put(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+var cfg=store('av3_cfg',{prov:'gemini',key:'',model:'gemini-flash-latest',speak:true}),contacts=store('av3_c',[]),notes=store('av3_n',[]);
+var timers=[],pending=null,on=false,rec=null,hist=[],log=$('log'),st=$('state'),busy=false,convo=false,sq=[],sp=false,gen=0,wantListen=false,weak=false,chat=[],vmOn=false;
+
+if(!cfg.prov)cfg.prov='claude';
+var DEFM={gemini:'gemini-flash-latest',groq:'openai/gpt-oss-120b',openrouter:'meta-llama/llama-3.3-70b-instruct:free',claude:'claude-haiku-5-5'};
+if(!cfg.keys){cfg.keys={};cfg.models={};if(cfg.key)cfg.keys[cfg.prov]=cfg.key;if(cfg.model)cfg.models[cfg.prov]=cfg.model}
+if(cfg.models&&cfg.models.groq==='llama-3.3-70b-versatile')cfg.models.groq=DEFM.groq;
+if(cfg.rate==null)cfg.rate=1;if(cfg.pitch==null)cfg.pitch=1;if(!cfg.lang)cfg.lang='pt-PT';if(!cfg.micmode)cfg.micmode='run';if(cfg.voice==null)cfg.voice='';if(!cfg.vmode)cfg.vmode='gemini';if(!cfg.gvoice)cfg.gvoice='Kore';if(!cfg.tts)cfg.tts='gemini-3.1-flash-tts-preview';
+if(!cfg.vdef){cfg.vmode='device';cfg.vdef=1}
+var unlocked=false,fails=0,until=0,PW=store('av3_pw',null);
+function nat(){return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.DirectCall||null}
+/* ---------- utilitários ---------- */
+function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
+var FILL=/\b(por favor|pf|podes|podias|pode|poderia|consegues|gostava de|gostaria de|quero que|quero|preciso de|preciso que|assistente)\b/g;
+function clean(s){return norm(s).replace(FILL,' ').replace(/\s+/g,' ').trim()}
+function creatorKind(t){
+ var n=norm(t);
+ if(/\b(quem\s+es\s+tu|quem\s+es|como\s+te\s+chamas|qual\s+e\s+o\s+teu\s+nome|apresenta\s+te)\b/.test(n))return 'id';
+ var verbo=/\b(criou|criado|criada|criador|criadores|desenvolveu|desenvolvido|desenvolvedor|programou|programado|programador|construiu|construido|inventou|fabricou|idealizou|autor|dono|fundador|pai)\b/.test(n);
+ var alvo=/\b(te|teu|tua|voce|ti|foste|gomezardo)\b/.test(n)||/\b(esta|desta)\s+(app|aplicacao|ia)\b/.test(n)||/\b(este|deste)\s+(assistente|chat)\b/.test(n);
+ var perg=/\b(quem|qual|quais|que\s+empresa|por\s+quem|de\s+quem)\b/.test(n);
+ if(verbo&&alvo&&perg)return 'creator';
+ if(/\bquem\s+(foi\s+que\s+)?te\s+(fez|fizeram|criou|construiu|programou|desenvolveu|inventou)\b/.test(n))return 'creator';
+ if(/\bquem\s+(fez|fizeram)\s+(o\s+)?(gomezardo|esta\s+app|esta\s+aplicacao|este\s+assistente|a\s+ti|voce)\b/.test(n))return 'creator';
+ if(/\bpor\s+tras\s+de\s+(ti|voce)\b/.test(n)||/\bquem\s+esta\s+por\s+tras\b/.test(n))return 'creator';
+ return '';
+}
+function digits(p){return p.replace(/[^\d+]/g,'')}
+function lev(a,b){var d=[],i,j;for(i=0;i<=a.length;i++)d[i]=[i];for(j=1;j<=b.length;j++)d[0][j]=j;
+ for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+function fmt(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')}
+function matchContacts(target){
+ var t=norm(target).replace(/^(o|a|os|as|ao|meu|minha)\s+/,'');if(!t||!contacts.length)return[];
+ var sc=contacts.map(function(c){var n=norm(c.name),f=n.split(' ')[0],s;
+  if(n===t)s=0;else if(f===t)s=1;else if(n.indexOf(t)>-1||t.indexOf(n)>-1)s=2;
+  else{var d=Math.min(lev(n,t),lev(f,t));s=d<=Math.max(1,Math.floor(t.length*.3))?3+d:99}
+  return{c:c,s:s}}).filter(function(x){return x.s<99}).sort(function(a,b){return a.s-b.s});
+ return sc.length?sc.filter(function(x){return x.s===sc[0].s}).map(function(x){return x.c}):[];
+}
+
+/* ---------- conversa ---------- */
+function mkActs(acts){
+ var w=document.createElement('div');w.className='acts';
+ acts.forEach(function(a){var e;
+  if(a.href){e=document.createElement('a');e.href=a.href;if(/^https?:/.test(a.href)){e.target='_blank';e.rel='noopener'}e.addEventListener('click',function(){pending=null})}
+  else{e=document.createElement('button');e.type='button';e.addEventListener('click',a.fn)}
+  e.className='act'+(a.p?' p':'');e.textContent=a.label;w.appendChild(e)});
+ return w;
+}
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function inl(t){return esc(t).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|[\s(])\*([^*\s][^*]*)\*/g,'$1<em>$2</em>').replace(/`([^`]+)`/g,'<code>$1</code>')}
+function renderMd(el,text){
+ var h='',list=null;
+ function close(){if(list){h+='</'+list+'>';list=null}}
+ text.replace(/\r/g,'').split('\n').forEach(function(l){
+  var m;
+  if((m=l.match(/^\s*[-*•]\s+(.*)$/))){if(list!=='ul'){close();h+='<ul>';list='ul'}h+='<li>'+inl(m[1])+'</li>'}
+  else if((m=l.match(/^\s*\d+[.)]\s+(.*)$/))){if(list!=='ol'){close();h+='<ol>';list='ol'}h+='<li>'+inl(m[1])+'</li>'}
+  else if((m=l.match(/^\s*#{1,3}\s+(.*)$/))){close();h+='<p><strong>'+inl(m[1])+'</strong></p>'}
+  else if(!l.trim()){close()}
+  else{close();h+='<p>'+inl(l)+'</p>'}
+ });
+ close();el.innerHTML=h;
+}
+function plain(t){return t.replace(/\*\*/g,'').replace(/[`#>]/g,'').replace(/(^|\n)\s*[-*•]\s+/g,'$1').replace(/\*/g,'')}
+function bubble(cls,text,acts){
+ var d=document.createElement('div');d.className='m '+cls;
+ if(cls==='a'){var b=document.createElement('div');b.className='md';renderMd(b,text);d.appendChild(b)}else d.textContent=text;
+ if(acts&&acts.length)d.appendChild(mkActs(acts));
+ log.appendChild(d);log.scrollTop=log.scrollHeight;return d;
+}
+function pickVoice(){
+ var all=speechSynthesis.getVoices();
+ if(cfg.voice){var f=all.filter(function(x){return x.voiceURI===cfg.voice})[0];if(f)return f}
+ var v=all.filter(function(x){return /^pt/i.test(x.lang)});
+ return v.filter(function(x){return /pt[-_]PT/i.test(x.lang)})[0]||v[0]||null;
+}
+function showStop(on){var b=$('stp');if(b)b.hidden=!on}
+var pq=[],pgen=0,asrc=null,actx=null,ttsOff=0,dpend=0;
+function speaking(){return sp||pq.length>0}
+function wantSpeak(){return !!cfg.speak||vmOn}
+function noVoices(){try{return speechSynthesis.getVoices().length===0}catch(e){return true}}
+function premium(){return wantSpeak()&&(cfg.vmode==='gemini'||noVoices())&&!!K('gemini')&&Date.now()>ttsOff}
+var dq=[],dcur=null,dtimer=null;
+function devSpeak(t){dq.push(t);devNext()}
+function devNext(){
+ if(dcur||!dq.length)return;
+ var t=dq.shift(),g=gen,started=false,u;
+ try{
+  u=new SpeechSynthesisUtterance(t);var v=pickVoice();
+  u.lang=(v&&v.lang)||'pt-PT';if(v)u.voice=v;u.rate=cfg.rate||1;u.pitch=cfg.pitch||1;
+ }catch(e){return}
+ dcur=u;sp=true;showStop(true);
+ var fin=function(ev){
+  if(dcur!==u)return;
+  clearTimeout(dtimer);dcur=null;
+  if(g!==gen)return;
+  if(ev&&ev.error==='not-allowed')st.textContent='Toque no ecrã e tente outra vez para ativar a voz.';
+  if(dq.length)devNext();
+  else if(!pgen){sp=false;showStop(false);idle()}
+ };
+ u.onstart=function(){started=true};
+ u.onend=fin;u.onerror=fin;
+ dtimer=setTimeout(function(){
+  if(dcur!==u)return;
+  if(!started&&noVoices())st.textContent='O telemóvel não tem voz instalada. Use a voz de alta qualidade (Definições) ou instale uma em Texto para voz.';
+  try{speechSynthesis.cancel()}catch(e){}
+  fin();
+ },4000+t.length*90);
+ try{speechSynthesis.speak(u)}catch(e){fin()}
+}
+function deviceSay(t){
+ return new Promise(function(res){
+  if(!('speechSynthesis' in window)){res();return}
+  try{var v=pickVoice(),u=new SpeechSynthesisUtterance(t);u.lang=(v&&v.lang)||'pt-PT';if(v)u.voice=v;u.rate=cfg.rate||1;u.pitch=cfg.pitch||1;u.onend=u.onerror=function(){res()};speechSynthesis.speak(u)}
+  catch(e){res()}
+ });
+}
+async function ttsGemini(t){
+ var body={contents:[{parts:[{text:'Diz de forma natural, clara e calorosa, em português: '+t}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:cfg.gvoice||'Kore'}}}}};
+ var r=await post('gemini','https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(cfg.tts||'gemini-3.1-flash-tts-preview')+':generateContent',{'x-goog-api-key':K('gemini')},body,45000);
+ var d=await withTimeout(r.json(),45000,'o áudio demorou demasiado');
+ var ps=(d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts)||[];
+ var a=ps.filter(function(p){return p.inlineData&&p.inlineData.data})[0];
+ if(!a)throw new Error('sem áudio');
+ return a.inlineData.data;
+}
+function playPcm(b64){
+ return new Promise(function(res){
+  var bin=atob(b64),n=bin.length>>1,f=new Float32Array(n);
+  for(var i=0;i<n;i++){var v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>=32768)v-=65536;f[i]=v/32768}
+  actx=actx||new(window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended')actx.resume();
+  var ab=actx.createBuffer(1,Math.max(n,1),24000);ab.copyToChannel(f,0);
+  var s=actx.createBufferSource();s.buffer=ab;s.connect(actx.destination);
+  var done=false;function fin(){if(!done){done=true;res()}}
+  s.onended=fin;setTimeout(fin,n/24+2500);asrc=s;s.start();
+ });
+}
+function splitSeg(t,max){
+ max=max||700;var out=[],cur='';
+ function add(s){if(cur&&(cur+' '+s).length>max){out.push(cur);cur=s}else cur=cur?cur+' '+s:s}
+ t.split(/(?<=[.!?])\s+|\n+/).forEach(function(s){
+  if(!s)return;
+  if(s.length<=max){add(s);return}
+  s.split(/(?<=[,;:])\s+/).forEach(function(c){
+   while(c.length>max){var k=c.lastIndexOf(' ',max);if(k<1)k=max;add(c.slice(0,k));c=c.slice(k).trim()}
+   if(c)add(c);
+  });
+ });
+ if(cur)out.push(cur);return out;
+}
+function speakChunk(t){
+ t=plain(t);if(!wantSpeak()||!t.trim())return;
+ if(premium()){splitSeg(t,260).forEach(function(x){pq.push(x)});pumpP();return}
+ if(!('speechSynthesis' in window))return;
+ splitSeg(t,160).forEach(devSpeak);
+}
+async function pumpP(){
+ if(pgen||!pq.length)return;
+ var g=gen+1;pgen=g;sp=true;showStop(true);
+ function ask(){if(!pq.length)return null;var t=pq.shift(),pr=ttsGemini(t);pr.catch(function(){});return{t:t,p:pr}}
+ var cur=ask();
+ while(cur&&gen+1===g){
+  var nxt=ask(),b=null,fail=false,ferr=null;
+  try{b=await cur.p}catch(e){fail=true;ferr=e}
+  if(gen+1!==g)break;
+  if(fail&&noVoices()){
+   await new Promise(function(r){setTimeout(r,ferr&&ferr.http===429?4000:1200)});
+   if(gen+1!==g)break;
+   try{b=await ttsGemini(cur.t);fail=false}
+   catch(e2){st.textContent='A voz de alta qualidade falhou ('+String(e2&&e2.message||'erro').replace(/\.$/,'')+'). Instale uma voz em Definições do Android > Texto para voz.'}
+   if(gen+1!==g)break;
+   if(!fail)await playPcm(b);
+  }else if(fail){ttsOff=Date.now()+60000;await deviceSay(cur.t)}
+  else await playPcm(b);
+  if(gen+1!==g)break;
+  cur=nxt||ask();
+ }
+ if(pgen===g)pgen=0;
+ if(gen+1===g){
+  if(pq.length){pumpP();return}
+  sp=false;showStop(false);idle();
+ }
+}
+function stopSpeak(){gen++;pq=[];dq=[];dcur=null;clearTimeout(dtimer);sp=false;pgen=0;dpend=0;showStop(false);try{if(asrc)asrc.stop()}catch(e){}try{speechSynthesis.cancel()}catch(e){}}
+function idle(){if(busy)return;if(convo||wantListen){wantListen=false;setTimeout(listenNow,350)}}
+function say(t,acts,listen){bubble('a',t,acts);if(listen)wantListen=true;speakChunk(t);if(!speaking())idle()}
+function copyText(t){
+ function fb(){try{var x=document.createElement('textarea');x.value=t;x.style.position='fixed';x.style.opacity='0';document.body.appendChild(x);x.select();document.execCommand('copy');x.remove()}catch(e){}}
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).catch(fb);else fb();
+}
+function mkStream(q){
+ var d=document.createElement('div');d.className='m a';
+ var body=document.createElement('div');body.className='md';d.appendChild(body);
+ log.appendChild(d);var spoken=0,txt='';
+ function flush(fin){
+  var rest=txt.slice(spoken);
+  var cut=fin?rest.length:Math.max(rest.lastIndexOf('. '),rest.lastIndexOf('! '),rest.lastIndexOf('? '),rest.lastIndexOf('\n'))+1;
+  if(!fin&&premium()&&cut<110)return;
+  if(cut>0){var c=rest.slice(0,cut).trim();spoken+=cut;if(c)speakChunk(c)}
+ }
+ function host(u){try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return 'fonte'}}
+ return{el:d,
+  update:function(t){txt=t;renderMd(body,t);log.scrollTop=log.scrollHeight;flush(false)},
+  finish:function(t){if(t!=null&&t!==''){txt=t;renderMd(body,t)}flush(true);log.scrollTop=log.scrollHeight},
+  acts:function(a){d.appendChild(mkActs(a))},
+  sources:function(ls){
+   if(!ls||!ls.length)return;
+   var wrap=document.createElement('div');wrap.className='srcw';
+   var chip=document.createElement('button');chip.type='button';chip.className='chip';
+   var f=host(ls[0].href);if(/vertexaisearch|googleapis|google\.com/.test(f))f=ls[0].label;
+   chip.textContent='🌐 '+f+(ls.length>1?' +'+(ls.length-1):'');
+   var list=document.createElement('div');list.className='srcl';list.hidden=true;
+   var h=document.createElement('div');h.className='srch';h.textContent='Fontes';list.appendChild(h);
+   ls.forEach(function(l){var a=document.createElement('a');a.href=l.href;a.target='_blank';a.rel='noopener';a.textContent=l.label+' · '+host(l.href);list.appendChild(a)});
+   chip.onclick=function(){list.hidden=!list.hidden};
+   wrap.appendChild(chip);wrap.appendChild(list);d.appendChild(wrap);
+  },
+  tools:function(){
+   var bar=document.createElement('div');bar.className='tools';
+   var menu=document.createElement('div');menu.className='mm';menu.hidden=true;
+   function btn(ic,label,fn){var b=document.createElement('button');b.type='button';b.className='tb';b.textContent=ic;b.setAttribute('aria-label',label);b.title=label;b.onclick=function(){fn(b)};bar.appendChild(b);return b}
+   function vote(v,me,other){
+    me.classList.toggle('on');other.classList.remove('on');
+    var fb=store('av3_fb',[]);fb.push({q:q||'',a:txt.slice(0,300),v:me.classList.contains('on')?v:0,t:Date.now()});put('av3_fb',fb.slice(-50));
+   }
+   btn('📋','Copiar',function(b){copyText(plain(txt));b.textContent='✓';setTimeout(function(){b.textContent='📋'},1500)});
+   var up=btn('👍','Gostei',function(){vote(1,up,dn)});
+   var dn=btn('👎','Não gostei',function(){vote(-1,dn,up);menu.hidden=false});
+   btn('🔊','Ouvir',function(){if(speaking()){stopSpeak()}else{var s=cfg.speak;cfg.speak=true;speakChunk(txt);cfg.speak=s}});
+   btn('↗','Partilhar',function(){var t=plain(txt);if(navigator.share)navigator.share({text:t}).catch(function(){});else copyText(t)});
+   btn('⋮','Mais',function(){menu.hidden=!menu.hidden});
+   [['Gerar outra resposta',function(){if(q)run(q)}],['Copiar resposta',function(){copyText(plain(txt));menu.hidden=true}]].forEach(function(o){var b=document.createElement('button');b.type='button';b.className='act';b.textContent=o[0];b.onclick=o[1];menu.appendChild(b)});
+   d.appendChild(bar);d.appendChild(menu);
+  },
+  empty:function(){return !txt.trim()}};
+}
+function extractResp(s){
+ var m=s.match(/"resposta"\s*:\s*"((?:[^"\\]|\\.)*)/);if(!m)return null;
+ return m[1].replace(/\\u([0-9a-fA-F]{4})/g,function(_,h){return String.fromCharCode(parseInt(h,16))}).replace(/\\n/g,'\n').replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+}
+function launch(href){var a=document.createElement('a');a.href=href;if(/^https?:/.test(href)){a.target='_blank';a.rel='noopener'}document.body.appendChild(a);a.click();a.remove()}
+function ask(text,href,label){pending={href:href};
+ say(text+' Diga «sim» ou toque no botão.',[{label:label,href:href,p:true},{label:'Cancelar',fn:function(){pending=null;say('Cancelado.')}}],true)}
+function openUrl(text,href,label){say(text,[{label:label,href:href,p:true}]);setTimeout(function(){launch(href)},900)}
+
+/* ---------- temporizadores ---------- */
+function renderTimers(){var el=$('timers');el.innerHTML='';
+ timers.forEach(function(t){var s=Math.max(0,Math.round((t.end-Date.now())/1000));
+  var b=document.createElement('button');b.className='tm';b.textContent='⏱ '+fmt(s)+' · '+t.label+' ✕';
+  b.setAttribute('aria-label','Cancelar temporizador '+t.label);
+  b.onclick=function(){clearTimeout(t.h);timers=timers.filter(function(x){return x!==t});renderTimers()};el.appendChild(b)})}
+setInterval(function(){if(timers.length)renderTimers()},1000);
+function beep(){try{var c=new(window.AudioContext||window.webkitAudioContext)();
+ [0,.35,.7].forEach(function(d){var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.2;o.start(c.currentTime+d);o.stop(c.currentTime+d+.2)})}catch(e){}
+ try{navigator.vibrate&&navigator.vibrate([300,100,300])}catch(e){}}
+function addTimer(ms,label){var t={end:Date.now()+ms,label:label};
+ t.h=setTimeout(function(){timers=timers.filter(function(x){return x!==t});renderTimers();beep();say('O tempo acabou: '+label+'.')},ms);
+ timers.push(t);renderTimers()}
+
+/* ---------- API do Claude ---------- */
+var PNAME={gemini:'Gemini',groq:'Groq',openrouter:'OpenRouter',claude:'Claude'};
+function K(p){return(cfg.keys&&cfg.keys[p])||''}
+function M(p){return(cfg.models&&cfg.models[p])||DEFM[p]}
+function chain(){var o=[cfg.prov,'gemini','groq','openrouter','claude'],r=[];o.forEach(function(p){if(K(p)&&r.indexOf(p)<0)r.push(p)});return r}
+function herr(p,s){
+ var e=new Error(s===401||s===403?'Chave '+PNAME[p]+' inválida ou sem permissão.':s===400?'Pedido recusado por '+PNAME[p]+' (chave ou modelo errado).':s===404?'Modelo '+PNAME[p]+' não encontrado.':s===429?'Limite gratuito '+PNAME[p]+' atingido.':'Erro '+PNAME[p]+' ('+s+').');
+ e.retry=(s===500||s===502||s===503);e.http=s;return e;
+}
+var T_CONN=10000,T_IDLE=12000;
+function withTimeout(pr,ms,msg){
+ return new Promise(function(res,rej){
+  var t=setTimeout(function(){var e=new Error(msg||'Tempo esgotado.');e.retry=true;rej(e)},ms);
+  pr.then(function(v){clearTimeout(t);res(v)},function(e){clearTimeout(t);rej(e)});
+ });
+}
+async function post(p,url,headers,body,ms){
+ var r,ac=new AbortController(),tm=setTimeout(function(){ac.abort()},ms||T_CONN);
+ try{r=await fetch(url,{method:'POST',headers:Object.assign({'content-type':'application/json'},headers),body:JSON.stringify(body),signal:ac.signal})}
+ catch(e){
+  clearTimeout(tm);weak=true;
+  var te=new Error(ac.signal.aborted?'o serviço '+PNAME[p]+' demorou demasiado':'Sem ligação à internet.');
+  te.retry=ac.signal.aborted;throw te;
+ }
+ clearTimeout(tm);weak=false;
+ if(!r.ok)throw herr(p,r.status);
+ return r;
+}
+async function sse(resp,onData){
+ var rd=resp.body.getReader(),dec=new TextDecoder(),buf='';
+ try{
+  for(;;){
+   var x=await withTimeout(rd.read(),T_IDLE,'a resposta parou a meio');
+   if(x.done)break;
+   buf+=dec.decode(x.value,{stream:true});
+   var ls=buf.split('\n');buf=ls.pop();
+   ls.forEach(function(l){if(l.indexOf('data:')!==0)return;var js=l.slice(5).trim();if(!js||js==='[DONE]')return;try{onData(JSON.parse(js))}catch(z){}});
+  }
+ }finally{try{rd.cancel()}catch(z){}}
+}
+async function pickModel(p){
+ try{
+  var ids,pref;
+  if(p==='groq'){
+   var d=await gj('https://api.groq.com/openai/v1/models',{headers:{Authorization:'Bearer '+K('groq')}});
+   ids=(d.data||[]).filter(function(m){return m.active!==false}).map(function(m){return m.id}).filter(function(x){return !/whisper|tts|guard|safeguard|orpheus|embed|playai/i.test(x)});
+   pref=[/gpt-oss-120b/,/gpt-oss-20b/,/qwen/,/llama/];
+  }else if(p==='openrouter'){
+   var d2=await gj('https://openrouter.ai/api/v1/models');
+   ids=(d2.data||[]).map(function(m){return m.id}).filter(function(x){return /:free$/.test(x)});
+   pref=[/gpt-oss-120b/,/llama-3\.3-70b/,/qwen3/,/gemma/,/llama/];
+  }else return null;
+  for(var k=0;k<pref.length;k++){var f=ids.filter(function(x){return pref[k].test(x)})[0];if(f)return f}
+  return ids[0]||null;
+ }catch(e){return null}
+}
+function shape(p,body,o){
+ delete body.reasoning_effort;delete body.response_format;
+ if(/gpt-oss/.test(body.model))body.reasoning_effort='low';
+ else if(o.json&&p==='groq')body.response_format={type:'json_object'};
+}
+async function oai(p,url,sys,msgs,o){
+ var body={model:M(p),stream:true,max_tokens:2048,messages:[{role:'system',content:sys}].concat(msgs)};
+ shape(p,body,o);
+ var r,hd={Authorization:'Bearer '+K(p)};
+ try{r=await post(p,url,hd,body)}
+ catch(e){
+  if(e.http!==404&&e.http!==400)throw e;
+  var m=await pickModel(p);
+  if(!m||m===body.model)throw e;
+  cfg.models=cfg.models||{};cfg.models[p]=m;put('av3_cfg',cfg);
+  body.model=m;shape(p,body,o);
+  r=await post(p,url,hd,body);
+ }
+ var full='';
+ await sse(r,function(d){var c=d.choices&&d.choices[0],t=c&&c.delta&&c.delta.content;if(t){full+=t;if(o.onText)o.onText(full)}});
+ return{text:full,meta:null};
+}
+var CALL={
+ gemini:async function(sys,msgs,o){
+  var body={systemInstruction:{parts:[{text:sys}]},contents:msgs.map(function(h){return{role:h.role==='assistant'?'model':'user',parts:[{text:h.content}]}}),generationConfig:{maxOutputTokens:2048}};
+  if(o.json)body.generationConfig.responseMimeType='application/json';
+  if(o.search)body.tools=[{google_search:{}}];
+  var models=[M('gemini')];if(models[0]!=='gemini-flash-lite-latest')models.push('gemini-flash-lite-latest');
+  var err=null;
+  for(var i=0;i<models.length;i++){for(var k=0;k<1;k++){
+   try{
+    var r=await post('gemini','https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(models[i])+':streamGenerateContent?alt=sse',{'x-goog-api-key':K('gemini')},body);
+    var full='',meta=null;
+    await sse(r,function(d){var c=d.candidates&&d.candidates[0];if(!c)return;((c.content&&c.content.parts)||[]).forEach(function(q){if(q.text){full+=q.text;if(o.onText)o.onText(full)}});if(c.groundingMetadata)meta=c.groundingMetadata});
+    return{text:full,meta:meta};
+   }catch(e){
+    err=e;
+    if(o.search&&body.tools&&[400,403,404,429].indexOf(e.http)>-1){delete body.tools;k--;continue}
+    if(!e.retry)throw e;
+    await new Promise(function(z){setTimeout(z,600)});
+   }
+  }}
+  throw err;
+ },
+ groq:function(sys,msgs,o){return oai('groq','https://api.groq.com/openai/v1/chat/completions',sys,msgs,o)},
+ openrouter:function(sys,msgs,o){return oai('openrouter','https://openrouter.ai/api/v1/chat/completions',sys,msgs,o)},
+ claude:async function(sys,msgs,o){
+  var r=await post('claude','https://api.anthropic.com/v1/messages',{'x-api-key':K('claude'),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},{model:M('claude'),max_tokens:2048,stream:true,system:sys,messages:msgs}),full='';
+  await sse(r,function(d){if(d.type==='content_block_delta'&&d.delta&&d.delta.text){full+=d.delta.text;if(o.onText)o.onText(full)}});
+  return{text:full,meta:null};
+ }
+};
+async function llm(sys,msgs,o){
+ var ch=chain(),err=null;
+ if(!ch.length)throw new Error('Sem chave de IA.');
+ for(var i=0;i<ch.length;i++){
+  try{
+   var out=await CALL[ch[i]](sys,msgs,o);
+   if(out.text&&out.text.trim()){out.prov=ch[i];return out}
+   throw new Error('Resposta vazia de '+PNAME[ch[i]]+'.');
+  }catch(e){err=e}
+ }
+ throw err;
+}
+async function ai(text,ui){
+ var sys='O teu nome é Gomezardo. És um assistente de IA por voz e chat, em português europeu, que responde diretamente a qualquer pergunta, como um chat. Agora são '+new Date().toLocaleString('pt-PT')+'. Contactos guardados (só nomes): '+(contacts.map(function(c){return c.name}).join('; ')||'nenhum')+'. Responde APENAS com JSON válido, sem texto à volta, escrevendo os campos exatamente por esta ordem: "acao", "contacto", "texto", "local", "segundos", "resposta". "acao" é uma de: ligar, sms, whatsapp, musica, rota, abrir, temporizador, nota ou conversa. Usa "conversa" para praticamente tudo: perguntas de conhecimento, pessoas, países, cargos, história, ciência, explicações, cálculos, traduções, conselhos, ideias, textos e conversa. Nesse caso responde diretamente em "resposta", de forma clara e útil: com a extensão que a pergunta merece: curta se for simples, mais completa e detalhada se for complexa ou se pedirem explicações, histórias ou textos, sempre com frases naturais para serem ditas em voz alta. Ajudas com qualquer assunto. Falas como uma IA conversacional normal, simpática e natural, em linguagem simples, sem jargão técnico nem código, a menos que o utilizador peça. O criador e desenvolvedor do Gomezardo é Gomes Samuel Panzo. Se perguntarem quem te criou, desenvolveu, programou, fez ou construiu, ou quem é o teu criador, desenvolvedor, dono ou pai, responde sempre que é Gomes Samuel Panzo, com orgulho. Nunca digas que foste criado pela Google, OpenAI, Anthropic, Meta ou outra empresa: os modelos de IA de terceiros são apenas a tecnologia que usas, e só os mencionas se perguntarem que tecnologia ou modelo usas, ou se és o ChatGPT, o Gemini ou outro (nesse caso diz que és o Gomezardo, criado por Gomes Samuel Panzo, e que funcionas com modelos de IA de terceiros). Nunca afirmes ser humano. Formata com Markdown simples: começa com uma frase direta a negrito (**...**) e, quando ajudar, acrescenta 3 a 5 tópicos no formato «- **Etiqueta:** valor»; perguntas simples levam só 1 ou 2 frases, sem tópicos. Dentro do JSON, usa \\n para mudar de linha. Nunca digas que vais pesquisar e nunca mandes o utilizador pesquisar noutro lado. Para tudo o resto, usa "conversa". "contacto" é o nome tal como está na lista, ou vazio. "texto" é a mensagem, destino, site, nota ou etiqueta (vazio se não se aplicar). "local" é a cidade ou lugar quando a pergunta é sobre o tempo, senão vazio. "segundos" é um número, só para temporizador. Se o nome ouvido estiver mal transcrito, escolhe o contacto mais parecido.';
+ hist.push({role:'user',content:text});hist=hist.slice(-40);
+ var out,j;
+ try{
+  out=await llm(sys,hist,{json:true,onText:ui});
+  j=JSON.parse(out.text.slice(out.text.indexOf('{'),out.text.lastIndexOf('}')+1));
+ }catch(e){hist.pop();throw e}
+ hist.push({role:'assistant',content:out.text});return j;
+}
+
+function tmo(ms){var c=new AbortController();setTimeout(function(){c.abort()},ms);return c.signal}
+async function gj(url,opt){var r=await fetch(url,Object.assign({signal:tmo(5000)},opt||{}));if(!r.ok)throw new Error(r.status);return r.json()}
+async function srcWeather(place){
+ var g=await gj('https://geocoding-api.open-meteo.com/v1/search?count=1&language=pt&name='+encodeURIComponent(place));
+ var c=g.results&&g.results[0];if(!c)return null;
+ var w=await gj('https://api.open-meteo.com/v1/forecast?latitude='+c.latitude+'&longitude='+c.longitude+'&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=3');
+ var u=w.current,dd=w.daily;
+ var t='Agora em '+c.name+(c.country?' ('+c.country+')':'')+': '+u.temperature_2m+'°C (sensação '+u.apparent_temperature+'°C), humidade '+u.relative_humidity_2m+'%, vento '+u.wind_speed_10m+' km/h, precipitação '+u.precipitation+' mm, código do tempo '+u.weather_code+'. Próximos dias (máx/mín/prob. chuva): '+dd.time.map(function(day,i){return day+': '+dd.temperature_2m_max[i]+'/'+dd.temperature_2m_min[i]+'°C, '+dd.precipitation_probability_max[i]+'%'}).join('; ')+'.';
+ return{name:'Open-Meteo',text:t,links:[{label:'Open-Meteo',href:'https://open-meteo.com'}]};
+}
+async function srcFx(){
+ var d=await gj('https://open.er-api.com/v6/latest/USD'),r=d.rates;if(!r)return null;
+ var pick=['EUR','AOA','BRL','GBP','MZN','ZAR'].filter(function(k){return r[k]}).map(function(k){return '1 USD = '+r[k]+' '+k}).join('; ');
+ return{name:'Câmbios (ExchangeRate-API)',text:pick+' (atualizado em '+(d.time_last_update_utc||'data desconhecida')+').',links:[{label:'ExchangeRate-API',href:'https://www.exchangerate-api.com'}]};
+}
+async function srcCrypto(){
+ var d=await gj('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,eur&include_24hr_change=true');
+ return{name:'CoinGecko',text:'Bitcoin: '+d.bitcoin.usd+' USD ('+d.bitcoin.usd_24h_change.toFixed(1)+'% em 24h); Ethereum: '+d.ethereum.usd+' USD ('+d.ethereum.usd_24h_change.toFixed(1)+'% em 24h).',links:[{label:'CoinGecko',href:'https://www.coingecko.com'}]};
+}
+async function srcTavily(q){
+ var d=await gj('https://api.tavily.com/search',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+K('tavily')},body:JSON.stringify({api_key:K('tavily'),query:q,max_results:5,include_answer:true})});
+ var a=(d.results||[]).slice(0,5);if(!a.length&&!d.answer)return null;
+ return{name:'Pesquisa web (Tavily)',text:(d.answer?'Resumo: '+d.answer+'\n':'')+a.map(function(x){return '- '+x.title+': '+(x.content||'').slice(0,300)}).join('\n'),links:a.slice(0,3).map(function(x){return{label:(x.title||'Fonte').slice(0,28),href:x.url}})};
+}
+async function extraData(q){
+ var t=norm(q),jobs=[];
+ if(K('tavily'))jobs.push(srcTavily(q));
+ if(/\b(tempo|clima|temperatura|chuva|previsao|chover|calor|frio)\b/.test(t)){
+  var m=q.match(/\b(?:em|de|para|no|na)\s+([A-ZÀ-Ú][\p{L}-]+(?:\s+[A-ZÀ-Ú][\p{L}-]+)*)/u);
+  if(m)jobs.push(srcWeather(m[1]));
+ }
+ if(/(dolar|euro|kwanza|cambio|cotacao|libra|rand)/.test(t))jobs.push(srcFx());
+ if(/(bitcoin|ethereum|cripto|btc)/.test(t))jobs.push(srcCrypto());
+ if(!jobs.length)return[];
+ var rs=await Promise.race([Promise.all(jobs.map(function(p){return p.catch(function(){return null})})),new Promise(function(r){setTimeout(function(){r([])},2500)})]);
+ return rs.filter(Boolean);
+}
+function isCommand(t){
+ var n=clean(t);
+ return /^(liga|ligar|telefona|telefonar|chama|chamar|contacta|contactar|marca|marcar|whatsapp|zap|anota|anotar|aponta|apontar|toma nota|guarda nota|toca|tocar|poe|ouvir|reproduz|reproduzir|leva|levar|navega|navegar|direcoes|rota|como chego|abre|abrir|vai para|ir para)\b/.test(n)
+  ||/\b(envia|enviar|manda|mandar|escreve|escrever)\b.*\b(mensagem|sms|texto)\b/.test(n)
+  ||/\b(avisa|lembra|acorda|desperta|alarme|temporizador|cronometro|timer)\b/.test(n);
+}
+async function chatDirect(q){
+ var S=null;function str(){return S||(S=mkStream(q))}
+ chat.push({role:'user',content:q});chat=chat.slice(-40);
+ try{
+  var extra=[];
+  if(cfg.extra){try{extra=await extraData(q)}catch(z){extra=[]}}
+  var gem=chain()[0]==='gemini';
+  var sys='És o Gomezardo, uma IA conversacional normal, simpática e natural, em português europeu. Agora são '+new Date().toLocaleString('pt-PT')+'. Respondes tu mesmo, diretamente e sem rodeios, a qualquer pergunta ou pedido, com a extensão que merece (curta se for simples, mais completa se for complexa), com frases naturais para serem ditas em voz alta e sem jargão técnico nem código, a menos que peçam. O criador e desenvolvedor do Gomezardo é Gomes Samuel Panzo. Se perguntarem quem te criou, desenvolveu, programou, fez ou construiu, ou quem é o teu criador, desenvolvedor, dono ou pai, responde sempre que é Gomes Samuel Panzo, com orgulho. Nunca digas que foste criado pela Google, OpenAI, Anthropic, Meta ou outra empresa: os modelos de IA de terceiros são apenas a tecnologia que usas, e só os mencionas se perguntarem que tecnologia ou modelo usas, ou se és o ChatGPT, o Gemini ou outro (nesse caso diz que és o Gomezardo, criado por Gomes Samuel Panzo, e que funcionas com modelos de IA de terceiros). Nunca afirmes ser humano. '
+   +(gem?'Tens a pesquisa em tempo real da Google: usa-a quando precisares de factos atuais (cargos, notícias, resultados, preços, tempo, datas recentes) e responde com os dados mais recentes, sem dizeres que vais pesquisar. ':'O teu conhecimento pode estar desatualizado: em factos que mudam com o tempo, diz «segundo o que sei». ')
+   +'Formata com Markdown simples: começa com uma frase direta a negrito (**...**) e, quando ajudar, acrescenta 3 a 5 tópicos no formato «- **Etiqueta:** valor»; perguntas simples levam só 1 ou 2 frases, sem tópicos. Nunca mandes o utilizador pesquisar noutro lado.'
+   +(extra.length?'\n\nDADOS EM TEMPO REAL (usa-os e diz de onde vêm; códigos do tempo WMO: 0 limpo, 1 a 3 nublado, 45 e 48 nevoeiro, 51 a 67 chuva, 71 a 77 neve, 80 a 82 aguaceiros, 95 a 99 trovoada):\n'+extra.map(function(s){return '- '+s.name+': '+s.text}).join('\n'):'');
+  var out=await llm(sys,chat,{search:true,onText:function(f){str().update(f)}});
+  str().finish(out.text);
+  chat.push({role:'assistant',content:out.text});
+  if(cfg.showsrc){
+   var links=[];
+   extra.forEach(function(s){(s.links||[]).forEach(function(l){links.push(l)})});
+   ((out.meta&&out.meta.groundingChunks)||[]).forEach(function(c){if(c.web&&c.web.uri)links.push({label:c.web.title||'Fonte',href:c.web.uri})});
+   S.sources(links.slice(0,4).map(function(l){return{label:String(l.label).slice(0,26),href:l.href}}));
+  }
+  S.tools();
+ }catch(e){
+  chat.pop();
+  if(S&&S.empty())S.el.remove();
+  say('Não consegui responder agora ('+(e&&e.message?e.message:'erro desconhecido').replace(/\.$/,'')+').',[{label:'Tentar de novo',fn:function(){run(q)},p:true}]);
+ }
+}
+
+/* ---------- execução ---------- */
+function doContact(a,c,body){var n=digits(c.phone);
+ if(a==='ligar'){var N=nat();
+  if(N){say('A ligar para '+c.name+'.');N.dial({number:n}).then(function(r){if(r&&r.mode==='dial')say('Marcador aberto. Toque em Ligar para chamar '+c.name+'.')}).catch(function(e){say('Não consegui ligar'+(e&&e.message?': '+e.message:'')+'.',[{label:'Abrir marcador',href:'tel:'+n,p:true}])});return}
+  say('A ligar para '+c.name+'.',[{label:'Ligar agora',href:'tel:'+n,p:true}]);launch('tel:'+n);return}
+ if(a==='sms')return ask('Mensagem para '+c.name+(body?': «'+body+'»':'')+'?','sms:'+n+(body?'?body='+encodeURIComponent(body):''),'Abrir SMS');
+ return ask('Abrir o WhatsApp com '+c.name+'?','https://wa.me/'+n.replace('+',''),'Abrir WhatsApp');
+}
+var SITES={youtube:'https://www.youtube.com',google:'https://www.google.com',maps:'https://maps.google.com',gmail:'https://mail.google.com',whatsapp:'https://web.whatsapp.com',facebook:'https://www.facebook.com',instagram:'https://www.instagram.com'};
+function act(j){
+ var a=j.acao,x=(j.texto||'').toString().trim(),resp=j.resposta||'';
+ if(a==='ligar'||a==='sms'||a==='whatsapp'){
+  if(!contacts.length){say('Ainda não tem contactos guardados.',[{label:'Adicionar contacto',fn:function(){tab('c')},p:true}]);return}
+  var res=matchContacts(j.contacto||'');
+  if(!res.length){say('Não encontrei «'+(j.contacto||'esse contacto')+'» na sua lista.',[{label:'Adicionar contacto',fn:function(){tab('c');$('cn').value=j.contacto||'';$('cp').focus()},p:true}]);return}
+  if(res.length>1){say('Qual deles?',res.map(function(c){return{label:c.name,fn:function(){doContact(a,c,x)}}}));return}
+  doContact(a,res[0],x);return}
+ if(a==='atual')return openUrl(resp||'A pesquisar.','https://www.google.com/search?q='+encodeURIComponent(x),'Abrir pesquisa');
+ if(a==='pesquisar')return openUrl(resp||'A pesquisar.','https://www.google.com/search?q='+encodeURIComponent(x),'Abrir pesquisa');
+ if(a==='musica')return openUrl(resp||'A procurar no YouTube.','https://www.youtube.com/results?search_query='+encodeURIComponent(x),'Abrir YouTube');
+ if(a==='rota')return openUrl(resp||'A traçar a rota.','https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(x),'Abrir Maps');
+ if(a==='abrir'){var k=norm(x),u=SITES[k]||('https://www.google.com/search?q='+encodeURIComponent(x));return openUrl(resp||'A abrir.',u,'Abrir')}
+ if(a==='temporizador'&&+j.segundos>0){addTimer(+j.segundos*1000,x||'temporizador');say(resp||'Combinado.');return}
+ if(a==='nota'&&x){notes.unshift({t:x,d:new Date().toLocaleString('pt-PT')});put('av3_n',notes);renderNotes();say(resp||'Nota guardada.');return}
+ say(resp||'Não consegui perceber o pedido.');
+}
+async function run(alts){
+ try{await runInner(alts)}
+ catch(e){busy=false;st.textContent='';say('Ocorreu um erro ('+(e&&e.message?e.message:'desconhecido').replace(/\.$/,'')+').')}
+}
+async function runInner(alts){
+ if(typeof alts==='string')alts=[alts];
+ var first=(alts[0]||'').trim();if(!first)return;
+ bubble('u',first);stopSpeak();
+ try{if(rec&&on&&!nat())rec.stop()}catch(e){}
+ if(pending){var q=norm(first);
+  if(/^(sim|confirma|confirmo|pode ser|vai|claro|ok|isso|avanca|faz|liga)$/.test(q)){var p=pending;pending=null;launch(p.href);say('Feito.');return}
+  if(/^(nao|cancela|cancelar|esquece|deixa|para)$/.test(q)){pending=null;say('Cancelado.');return}
+  pending=null}
+ if(!chain().length){say('Falta a chave da API para eu perceber os pedidos.',[{label:'Abrir definições',fn:function(){tab('s')},p:true}]);return}
+ busy=true;st.textContent='A pensar…';
+ var ck=creatorKind(first);
+ if(ck){
+  var ct=ck==='id'?'**Sou o Gomezardo, um assistente de IA criado e desenvolvido por Gomes Samuel Panzo.**\nPodes falar ou escrever comigo à vontade: respondo a perguntas, converso e ajudo-te em tudo o que precisares.':'**Fui criado e desenvolvido por Gomes Samuel Panzo.**\nSou o Gomezardo, o assistente de IA dele, e estou aqui para conversar e ajudar em tudo o que precisares.';
+  chat.push({role:'user',content:first},{role:'assistant',content:ct});chat=chat.slice(-40);
+  var S0=mkStream(first);S0.update(ct);S0.finish(ct);S0.tools();
+  busy=false;st.textContent='';
+  if(!speaking())idle();
+  return;
+ }
+ if(!isCommand(first)){
+  try{await withTimeout(chatDirect(first),60000,'demorou demasiado')}
+  catch(e){say('Não consegui responder a tempo ('+e.message+').',[{label:'Tentar de novo',fn:function(){run(first)},p:true}])}
+  busy=false;st.textContent='';
+  if(!speaking())idle();
+  return;
+ }
+ var S=null,msg=first+(alts.length>1?'\n(outras interpretações do áudio: '+alts.slice(1,4).join(' | ')+')':'');
+ try{
+  var j=await ai(msg,function(full){
+   var a=(full.match(/"acao"\s*:\s*"(\w+)"/)||[])[1];
+   if(a==='conversa'){var r=extractResp(full);if(r!==null){if(!S)S=mkStream(first);S.update(r)}}
+  });
+  if(j.acao==='conversa'&&S){S.finish(j.resposta||null);S.tools()}
+  else if(j.acao==='atual'||j.acao==='pesquisar')await chatDirect(first);
+  else act(j);
+ }catch(e){
+  if(S&&S.empty())S.el.remove();
+  say(e.message&&!/JSON|Unexpected/.test(e.message)?e.message:'Não consegui interpretar a resposta. Tente de novo.');
+ }
+ busy=false;st.textContent='';
+ if(!speaking())idle();
+}
+
+/* ---------- voz ---------- */
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition,mic=$('mic'),idleN=0;
+function micOff(){on=false;mic.classList.remove('on')}
+function listenNow(){
+ if(busy||on)return;
+ if(nat()){
+  on=true;mic.classList.add('on');st.textContent='A ouvir…';
+  nat().listen().then(function(r){micOff();st.textContent='';idleN=0;if(cfg.micmode==='type'&&!convo){$('txt').value=r.results[0];sync();return}run(r.results)})
+  .catch(function(){micOff();st.textContent='';if(convo){idleN++;if(!vmOn&&idleN>=3)stopConvo('Modo conversa desligado por inatividade.');else setTimeout(listenNow,idleN>8?1500:400)}});
+  return}
+ if(!rec)return;
+ try{rec.start()}catch(e){}
+}
+function stopConvo(msg){
+ convo=false;var b=$('cv');b.setAttribute('aria-pressed','false');
+ if(msg)st.textContent=msg;
+ try{if(rec&&on)rec.stop()}catch(e){}
+}
+$('cv').onclick=openVoice;
+if(!nat()){
+ if(!SR){mic.disabled=true;mic.style.opacity='.4';$('cv').disabled=true;st.textContent='Sem reconhecimento de voz neste navegador. Use o Chrome ou escreva.'}
+ else{
+  rec=new SR();rec.lang=cfg.lang||'pt-PT';rec.interimResults=true;rec.maxAlternatives=5;
+  rec.onstart=function(){on=true;mic.classList.add('on');st.textContent='A ouvir…'};
+  rec.onend=function(){
+   micOff();if(st.textContent==='A ouvir…')st.textContent='';
+   if(convo&&!busy&&!speaking()){idleN++;if(!vmOn&&idleN>=3)stopConvo('Modo conversa desligado por inatividade.');else setTimeout(listenNow,idleN>8?1500:350)}
+  };
+  rec.onresult=function(e){var r=e.results[e.results.length-1];
+   if(!r.isFinal){st.textContent='«'+r[0].transcript+'»';return}
+   st.textContent='';idleN=0;var a=[];for(var i=0;i<r.length;i++)a.push(r[i].transcript);
+   if(cfg.micmode==='type'&&!convo){$('txt').value=a[0];sync();$('txt').focus();return}
+   run(a)};
+  rec.onerror=function(e){
+   if(e.error==='not-allowed'||e.error==='service-not-allowed'||e.error==='audio-capture'){stopConvo(recErr(e.error));return}
+   st.textContent=recErr(e.error)};
+ }
+}
+mic.onclick=startRec;
+
+/* ---------- separadores, listas, definições ---------- */
+function tab(p){if(p!=='s')unlocked=false;['a','c','n','s'].forEach(function(k){$('p-'+k).hidden=k!==p});
+ document.querySelectorAll('.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.p===p)});if(p==='s')guard()}
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tab(b.dataset.p)}});
+function row(main,sub,del){var d=document.createElement('div');d.className='it';
+ var l=document.createElement('div');l.textContent=main;var s=document.createElement('small');s.textContent=sub;l.appendChild(s);
+ var b=document.createElement('button');b.textContent='✕';b.setAttribute('aria-label','Apagar '+main);b.onclick=del;d.appendChild(l);d.appendChild(b);return d}
+function renderContacts(){var el=$('cl');el.innerHTML='';if(!contacts.length){el.textContent='Sem contactos.';return}
+ contacts.forEach(function(c,i){el.appendChild(row(c.name,c.phone,function(){contacts.splice(i,1);put('av3_c',contacts);renderContacts()}))})}
+function renderNotes(){var el=$('nl');el.innerHTML='';if(!notes.length){el.textContent='Sem notas.';return}
+ notes.forEach(function(n,i){el.appendChild(row(n.t,n.d,function(){notes.splice(i,1);put('av3_n',notes);renderNotes()}))})}
+$('cf').onsubmit=function(e){e.preventDefault();contacts.push({name:$('cn').value.trim(),phone:$('cp').value.trim()});
+ contacts.sort(function(a,b){return a.name.localeCompare(b.name,'pt')});put('av3_c',contacts);renderContacts();$('cn').value='';$('cp').value=''};
+$('nf').onsubmit=function(e){e.preventDefault();notes.unshift({t:$('nt').value.trim(),d:new Date().toLocaleString('pt-PT')});put('av3_n',notes);renderNotes();$('nt').value=''};
+function sync(){var h=$('txt').value.trim().length>0;$('snd').hidden=!h;$('cv').hidden=h}
+$('txt').addEventListener('input',sync);
+$('f').onsubmit=function(e){e.preventDefault();var v=$('txt').value;$('txt').value='';sync();run(v)};
+var PROVS=['gemini','groq','openrouter','claude'];
+(function(){
+ var box=$('prv'),sel=$('prov');
+ PROVS.forEach(function(p){
+  var o=document.createElement('option');o.value=p;o.textContent=PNAME[p];sel.appendChild(o);
+  var l=document.createElement('label');l.textContent='Chave '+PNAME[p];l.htmlFor='k-'+p;box.appendChild(l);
+  var k=document.createElement('input');k.type='text';k.style.webkitTextSecurity='disc';k.setAttribute('autocapitalize','off');k.spellcheck=false;k.id='k-'+p;k.autocomplete='off';k.placeholder='Cole a chave (opcional)';k.value=K(p);box.appendChild(k);
+  var m=document.createElement('input');m.type='text';m.id='m-'+p;m.setAttribute('aria-label','Modelo '+PNAME[p]);m.value=M(p);box.appendChild(m);
+ });
+ var l=document.createElement('label');l.textContent='Pesquisa web (Tavily, opcional)';l.htmlFor='k-tavily';box.appendChild(l);
+ var k=document.createElement('input');k.type='text';k.style.webkitTextSecurity='disc';k.setAttribute('autocapitalize','off');k.spellcheck=false;k.id='k-tavily';k.autocomplete='off';k.placeholder='Chave Tavily (opcional)';k.value=K('tavily');box.appendChild(k);
+})();
+$('prov').value=cfg.prov;$('sp').checked=cfg.speak;$('ss').checked=!!cfg.showsrc;$('sx').checked=!!cfg.extra;
+$('sv').onclick=function(){
+ cfg.prov=$('prov').value;cfg.keys=cfg.keys||{};cfg.models=cfg.models||{};
+ PROVS.forEach(function(p){cfg.keys[p]=$('k-'+p).value.trim();cfg.models[p]=$('m-'+p).value.trim()||DEFM[p]});
+ cfg.keys.tavily=$('k-tavily').value.trim();
+ cfg.speak=$('sp').checked;cfg.showsrc=$('ss').checked;cfg.extra=$('sx').checked;cfg.vmode=$('vk').value;cfg.gvoice=$('gv').value;ttsOff=0;cfg.voice=$('vs').value;cfg.rate=+$('vr').value;cfg.pitch=+$('vp').value;cfg.lang=$('vl').value;cfg.micmode=$('vm').value;
+ if(rec)rec.lang=cfg.lang;
+ put('av3_cfg',cfg);
+ if(!cfg.speak)try{speechSynthesis.cancel()}catch(e){}
+ tab('a');say('Definições guardadas.');
+};
+
+/* ---------- senha das definições ---------- */
+function guard(){
+ var lk=$('lk'),sc=$('sc');
+ if(unlocked){lk.hidden=true;sc.hidden=false;return}
+ sc.hidden=true;lk.hidden=false;
+ $('lkt').textContent=PW?'Senha das definições':'Crie uma senha para proteger as definições';
+ $('pw2').hidden=!!PW;$('lkb').textContent=PW?'Entrar':'Criar senha';$('rst').hidden=!PW;
+ $('lkm').textContent='';$('pw').value='';$('pw2').value='';
+}
+function b64(b){return btoa(String.fromCharCode.apply(null,new Uint8Array(b)))}
+function unb64(x){return Uint8Array.from(atob(x),function(c){return c.charCodeAt(0)})}
+async function hashPw(pw,salt){
+ var k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+ return b64(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:salt,iterations:150000},k,256));
+}
+$('lkb').onclick=async function(){
+ var pw=$('pw').value,m=$('lkm');
+ if(!pw){m.textContent='Escreva a senha.';return}
+ if(!window.crypto||!crypto.subtle){m.textContent='Este navegador não suporta a proteção por senha.';return}
+ if(!PW){
+  if(pw.length<4){m.textContent='Use pelo menos 4 caracteres.';return}
+  if(pw!==$('pw2').value){m.textContent='As senhas não coincidem.';return}
+  var salt=crypto.getRandomValues(new Uint8Array(16));
+  PW={s:b64(salt),h:await hashPw(pw,salt)};put('av3_pw',PW);unlocked=true;guard();return}
+ if(Date.now()<until){m.textContent='Muitas tentativas. Espere '+Math.ceil((until-Date.now())/1000)+' s.';return}
+ var h=await hashPw(pw,unb64(PW.s));
+ if(h===PW.h){fails=0;unlocked=true;guard()}
+ else{fails++;if(fails>=5){until=Date.now()+30000;fails=0}m.textContent='Senha errada.';$('pw').value=''}
+};
+['pw','pw2'].forEach(function(i){$(i).addEventListener('keydown',function(e){if(e.key==='Enter')$('lkb').click()})});
+$('rst').onclick=function(){if(confirm('Isto apaga a senha, a chave, os contactos e as notas deste dispositivo. Continuar?')){try{localStorage.clear()}catch(e){}location.reload()}};
+$('lockbtn').onclick=function(){tab('a')};
+
+/* ---------- voz: definições, parar e ditado ---------- */
+function fillVoices(){
+ var vs=$('vs');if(!vs||!('speechSynthesis' in window))return;
+ var all=speechSynthesis.getVoices().slice().sort(function(a,b){return (/^pt/i.test(b.lang)?1:0)-(/^pt/i.test(a.lang)?1:0)});
+ vs.innerHTML='';
+ var o=document.createElement('option');o.value='';o.textContent='Automática (português)';vs.appendChild(o);
+ all.forEach(function(v){var x=document.createElement('option');x.value=v.voiceURI;x.textContent=v.name+' ('+v.lang+')';vs.appendChild(x)});
+ vs.value=cfg.voice||'';
+}
+fillVoices();
+try{speechSynthesis.addEventListener('voiceschanged',fillVoices)}catch(e){}
+$('vk').value=cfg.vmode;$('gv').value=cfg.gvoice;$('vr').value=cfg.rate;$('vp').value=cfg.pitch;$('vl').value=cfg.lang;$('vm').value=cfg.micmode;
+$('stp').onclick=function(){stopSpeak()};
+$('vt').onclick=function(){
+ cfg.vmode=$('vk').value;cfg.gvoice=$('gv').value;cfg.voice=$('vs').value;cfg.rate=+$('vr').value;cfg.pitch=+$('vp').value;
+ ttsOff=0;var sv=cfg.speak;cfg.speak=true;stopSpeak();speakChunk('Olá, sou o Gomezardo. Esta é a minha voz.');cfg.speak=sv;
+};
+$('ntm').onclick=function(){
+ var inp=$('nt'),btn=this;
+ if(nat()){nat().listen().then(function(r){inp.value=r.results[0]}).catch(function(){});return}
+ if(!SR)return;
+ var r2=new SR();r2.lang=cfg.lang||'pt-PT';r2.interimResults=true;btn.classList.add('p');
+ r2.onresult=function(e){inp.value=e.results[e.results.length-1][0].transcript};
+ r2.onend=r2.onerror=function(){btn.classList.remove('p')};
+ try{r2.start()}catch(x){btn.classList.remove('p')}
+};
+
+/* ---------- menu +, nova conversa e diagnóstico ---------- */
+$('plus').onclick=function(){$('pm').hidden=!$('pm').hidden};
+$('newc').onclick=function(){stopSpeak();hist=[];chat=[];log.innerHTML='';$('pm').hidden=true;bubble('a','Nova conversa. Em que posso ajudar?')};
+$('dgb').onclick=async function(){
+ var o=$('dg'),rows=[];o.textContent='A testar…';
+ var ch=chain();
+ if(!ch.length)rows.push('✗ Nenhuma chave de IA guardada (toque em Guardar definições primeiro)');
+ for(var i=0;i<ch.length;i++){
+  try{await withTimeout(CALL[ch[i]]('Responde apenas: ok',[{role:'user',content:'ok'}],{}),20000,'sem resposta');rows.push('✓ '+PNAME[ch[i]]+' ('+M(ch[i])+')')}
+  catch(e){rows.push('✗ '+PNAME[ch[i]]+': '+(e&&e.message?e.message:'erro'))}
+ }
+ if(K('gemini')){try{await withTimeout(ttsGemini('Teste'),25000,'sem resposta');rows.push('✓ Voz de alta qualidade (Gemini)')}catch(e){rows.push('✗ Voz de alta qualidade: '+(e&&e.message?e.message:'erro')+' (usa a voz do telemóvel)')}}
+ var nv=0;
+ if('speechSynthesis' in window){
+  for(var w=0;w<8&&!(nv=speechSynthesis.getVoices().length);w++)await new Promise(function(r){setTimeout(r,250)});
+  rows.push(nv?'✓ Voz do telemóvel: '+nv+' vozes':'✗ Voz do telemóvel: nenhuma voz instalada (a app usa a voz de alta qualidade; ou instale uma em Definições do Android > Texto para voz)');
+ }else rows.push('✗ Este navegador não tem voz de saída');
+ rows.push((SR||nat())?'✓ Reconhecimento de voz disponível':'✗ Este navegador não reconhece voz (use o Chrome)');
+ try{var pm=await navigator.permissions.query({name:'microphone'});rows.push((pm.state==='granted'?'✓ Microfone: permitido':pm.state==='denied'?'✗ Microfone: bloqueado (permita no cadeado junto ao endereço)':'• Microfone: ainda não permitido'))}catch(e){rows.push('• Microfone: não foi possível verificar')}
+ var T=[['Tempo (Open-Meteo)','https://geocoding-api.open-meteo.com/v1/search?count=1&name=Luanda'],
+  ['Câmbios','https://open.er-api.com/v6/latest/USD']];
+ for(var k=0;k<T.length;k++){
+  try{await gj(T[k][1]);rows.push('✓ '+T[k][0])}
+  catch(e){rows.push('✗ '+T[k][0]+': '+(e&&e.message?e.message:'erro'))}
+ }
+ o.textContent=rows.join('\n');
+};
+
+var rr=null,rbase='',rcur='',rmode=null,rerr='',rtimer=null,rt0=0,recOn=false;
+function recErr(c){return c==='not-allowed'||c==='service-not-allowed'?'Sem acesso ao microfone. Toque no cadeado junto ao endereço e permita o microfone.':c==='no-speech'?'Não ouvi nada. Tente de novo.':c==='network'?'O reconhecimento de voz precisa de internet.':c==='audio-capture'?'Não encontrei nenhum microfone.':c==='language-not-supported'?'Este idioma não é suportado pelo microfone.':c==='aborted'?'':'Erro de voz ('+c+').'}
+function recTick(){var s=Math.floor((Date.now()-rt0)/1000);$('rtm').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');if(s>=120)sendRec()}
+function startRec(){
+ if(nat()){idleN=0;listenNow();return}
+ if(!SR){st.textContent='Este navegador não grava voz. Use o Chrome ou escreva.';return}
+ if(recOn)return;
+ stopSpeak();try{if(rec&&on)rec.stop()}catch(e){}
+ rbase='';rcur='';rmode=null;rerr='';recOn=true;rt0=Date.now();
+ $('f').hidden=true;$('rb').hidden=false;$('rtm').textContent='0:00';
+ clearInterval(rtimer);rtimer=setInterval(recTick,250);
+ recBegin();
+}
+function recBegin(){
+ rr=new SR();rr.lang=cfg.lang||'pt-PT';rr.interimResults=true;rr.continuous=true;rr.maxAlternatives=1;
+ rr.onresult=function(e){
+  var fin='',intr='';
+  for(var i=0;i<e.results.length;i++){var r=e.results[i];if(r.isFinal)fin+=r[0].transcript+' ';else intr+=r[0].transcript}
+  rcur=(fin+intr).trim();st.textContent='«'+(rbase+' '+rcur).trim()+'»';
+ };
+ rr.onerror=function(e){rerr=e.error||'erro'};
+ rr.onend=function(){
+  rbase=(rbase+' '+rcur).trim();rcur='';
+  if(recOn&&!rmode&&!rerr){setTimeout(function(){if(recOn&&!rmode)recBegin()},150);return}
+  recEnd();
+ };
+ try{rr.start()}catch(x){rerr='erro';recEnd()}
+}
+function sendRec(){if(!recOn||rmode)return;rmode='send';try{rr.stop()}catch(e){recEnd()}}
+function cancelRec(){if(!recOn)return;rmode='cancel';try{rr.stop()}catch(e){recEnd()}}
+function recEnd(){
+ if(!recOn)return;recOn=false;clearInterval(rtimer);
+ $('rb').hidden=true;$('f').hidden=false;
+ var txt=rbase.trim(),m=rmode;rbase='';rcur='';rmode=null;
+ if(rerr&&m!=='send'){st.textContent=recErr(rerr);return}
+ st.textContent='';
+ if(m==='cancel')return;
+ if(!txt){st.textContent=recErr(rerr||'no-speech');return}
+ if(cfg.micmode==='type'){$('txt').value=txt;sync();$('txt').focus();return}
+ run(txt);
+}
+$('rsd').onclick=sendRec;$('rcx').onclick=cancelRec;
+
+/* ---------- modo de voz em ecrã inteiro ---------- */
+var vmTimer=null;
+function vmUpdate(){
+ var cls='idle',txt='';
+ var ms=log.querySelectorAll('.m.a .md'),lastTxt=ms.length?(ms[ms.length-1].innerText||'').trim():'';
+ if(!navigator.onLine||weak){cls='weak';txt='Ligação fraca'}
+ else if(busy){cls='thinking';txt='A pensar…'}
+ else if(speaking()){cls='speaking';txt='A falar…'}
+ else if(on){cls='listening';txt='A ouvir…'}
+ else if(!convo){cls='idle';txt='Toque no microfone para falar'}
+ else{cls='listening';txt='A ouvir…'}
+ $('orb').className='orb '+cls;$('vst').textContent=txt;
+ $('vcap').textContent=(cls==='listening'&&/^«/.test(st.textContent))?st.textContent:((cls==='speaking'||cls==='thinking')?lastTxt.slice(0,240):'');
+ $('vmic').setAttribute('aria-pressed',convo?'false':'true');
+}
+function openVoice(){
+ $('vmo').hidden=false;document.body.style.overflow='hidden';
+ convo=true;idleN=0;$('cv').setAttribute('aria-pressed','true');
+ vmUpdate();clearInterval(vmTimer);vmTimer=setInterval(vmUpdate,250);
+ if(recOn)cancelRec();
+ vmOn=true;
+ if(!busy&&!speaking()){
+  var h=new Date().getHours(),g=h<12?'Bom dia':h<19?'Boa tarde':'Boa noite';
+  say(g+'! Sou o Gomezardo. Podemos conversar à vontade: eu falo, tu falas. Diz-me o que precisas.');
+ }
+}
+function closeVoice(){
+ vmOn=false;$('vmo').hidden=true;document.body.style.overflow='';clearInterval(vmTimer);
+ stopConvo('');stopSpeak();$('vsheet').hidden=true;$('vtr').hidden=true;
+}
+$('vx').onclick=closeVoice;
+$('orb').onclick=function(){stopSpeak();if(!on&&!busy){convo=true;listenNow()}};
+document.addEventListener('pointerdown',function(){try{var u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}},{once:true});
+$('vmic').onclick=function(){if(convo){stopConvo('')}else{convo=true;idleN=0;listenNow()}vmUpdate()};
+$('vf').onsubmit=function(e){e.preventDefault();var v=$('vtxt').value;$('vtxt').value='';if(v.trim())run(v)};
+$('vplus').onclick=function(){$('newc').click()};
+$('vmenu').onclick=function(){
+ var t=$('vtr');$('vsheet').hidden=true;t.hidden=!t.hidden;if(t.hidden)return;
+ t.innerHTML='';
+ Array.prototype.slice.call(log.querySelectorAll('.m')).slice(-10).forEach(function(m){
+  var md=m.querySelector('.md'),d=document.createElement('div');
+  d.className=m.classList.contains('u')?'tu':'ta';d.textContent=((md||m).innerText||'').trim();t.appendChild(d);
+ });
+ t.scrollTop=t.scrollHeight;
+};
+$('vk2').innerHTML=$('vk').innerHTML;$('gv2').innerHTML=$('gv').innerHTML;
+$('vk2').value=cfg.vmode;$('gv2').value=cfg.gvoice;$('vr2').value=cfg.rate;
+function vsave(){cfg.vmode=$('vk2').value;cfg.gvoice=$('gv2').value;cfg.rate=+$('vr2').value;ttsOff=0;$('vk').value=cfg.vmode;$('gv').value=cfg.gvoice;$('vr').value=cfg.rate;put('av3_cfg',cfg)}
+['vk2','gv2','vr2'].forEach(function(i){$(i).onchange=vsave});
+$('vset').onclick=function(){var t=$('vsheet');$('vtr').hidden=true;t.hidden=!t.hidden};
+
+/* ---------- app instalável ---------- */
+var dp=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;$('inst').hidden=false});
+$('inst').onclick=function(){if(dp){dp.prompt();dp=null;$('inst').hidden=true}};
+if(/iphone|ipad/i.test(navigator.userAgent)&&!navigator.standalone)$('ios').hidden=false;
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(function(){});
+
+renderContacts();renderNotes();
+bubble('a',chain().length?'Olá, sou o Gomezardo. Diga ou escreva o que precisa.':'Para começar, introduza a chave da API nas Definições.');
+})();
+</script>
+</body>
+</html>
